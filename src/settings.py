@@ -14,7 +14,7 @@ APCA_API_BASE_URL = config('APCA_API_BASE_URL', default='https://paper-api.alpac
 DATA_FEED = config('DATA_FEED', default='iex')  # <- replace to SIP if you have PRO subscription
 
 # App configuration
-TICKER = config("TICKER", default="AAPL")
+SYMBOL = config("SYMBOL", default="AAPL")
 BAR_SIZE = config("BAR_SIZE", default="minute")
 WINDOW_SIZE = config("WINDOW_SIZE", default=50, cast=int)
 QUANTITY = config("QUANTITY", default=100, cast=int)

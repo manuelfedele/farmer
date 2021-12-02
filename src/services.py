@@ -42,12 +42,15 @@ class TickerData:
             return 0, False
 
         if self.side == 'long':
+            # Long position and price has just crossed the moving average going down, we have to sell
             if self.last_quote < self.mean:
                 return -self.quantity, False
         elif self.side == 'short':
+            # Short position and price has just crossed the moving average going up, we have to buy
             if self.last_quote > self.mean:
                 return self.quantity, False
         else:
+            # No position, so is the starting point
             if self.last_quote < self.mean:
                 return -self.quantity, True
             else:
@@ -141,9 +144,11 @@ class AlgoBot:
 
         quantity, first_order = self.ticker_data.determine_action()
         if quantity:
-            if first_order:
+            if not first_order:
+                # Close the previous position
                 side = 'buy' if quantity < 0 else 'sell'
                 self.submit_order(side, abs(quantity))
+            # Open the position
             side = 'buy' if quantity > 0 else 'sell'
             self.submit_order(side=side, quantity=abs(quantity))
         else:

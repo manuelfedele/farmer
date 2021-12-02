@@ -145,10 +145,10 @@ class AlgoBot:
         quantity, first_order = self.ticker_data.determine_action()
         if quantity:
             if not first_order:
-                # Close the previous position
+                # Close the previous position, this is why the side is reversed
                 side = 'buy' if quantity < 0 else 'sell'
                 self.submit_order(side, abs(quantity))
-            # Open the position
+            # Open the position, so we follow the same side
             side = 'buy' if quantity > 0 else 'sell'
             self.submit_order(side=side, quantity=abs(quantity))
         else:

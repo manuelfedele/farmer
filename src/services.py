@@ -7,7 +7,7 @@ from alpaca_trade_api.rest import REST, APIError
 from alpaca_trade_api.stream import Stream
 from tenacity import retry
 
-from src.settings import CONFIG_FILE_PATH, TICKER, WINDOW_SIZE, QUANTITY, BAR_SIZE, SAVE_CONFIG
+from src.settings import CONFIG_FILE_PATH, TICKER, WINDOW_SIZE, QUANTITY, BAR_SIZE, SAVE_DATA
 from src.settings import logger
 
 
@@ -36,23 +36,24 @@ class TickerData:
         except ZeroDivisionError:
             return 0
 
-    def determine_action(self):
+    def determine_action(self) -> tuple[int, bool]:
         if len(self.bars) < self.window_size:
             logger.warning(f"Not enough bars to calculate moving average")
-            return None, 0, False
+            return 0, False
 
-        quantity = abs(self.quantity)
-        if not self.side:
-            if self.mean > self.last_quote:
-                return "buy", quantity, True
-            elif self.mean < self.last_quote:
-                return "sell", quantity, True
-        elif self.last_quote <= self.mean and self.side == 'long':
-            return "sell", quantity, False
-        elif self.last_quote >= self.mean and self.side == 'short':
-            return "buy", quantity, False
+        if self.side == 'long':
+            if self.last_quote < self.mean:
+                return -self.quantity, False
+        elif self.side == 'short':
+            if self.last_quote > self.mean:
+                return self.quantity, False
         else:
-            return None, 0, False
+            if self.last_quote < self.mean:
+                return -self.quantity, True
+            else:
+                return self.quantity, True
+
+        return 0, False
 
     def plot(self):
         plt.clp()
@@ -79,35 +80,34 @@ class AlgoBot:
             stream: Stream,
             api: REST,
             ticker_data: TickerData,
-            save_config: bool = SAVE_CONFIG
+            save_data: bool = SAVE_DATA
     ):
 
         self.stream = stream
         self.api = api
         self.ticker_data = ticker_data
-        self.save_config = save_config
+        self.save_data = save_data
 
-        self.load_config()
+        self.load_data()
         self.update_ticker_data()
 
-        logger.debug(self.ticker_data)
-        self.ticker_data.plot()
+        logger.info(self.ticker_data)
 
     def update_ticker_data(self):
         try:
-            logger.debug(f"Trying to fetch position from Alpaca for {self.ticker_data.ticker}")
+            logger.info(f"Trying to fetch position from Alpaca for {self.ticker_data.ticker}")
             position = self.api.get_position(self.ticker_data.ticker)
             self.ticker_data.quantity = int(position.qty)
             self.ticker_data.side = position.side
             self.ticker_data.avg_entry_price = float(position.avg_entry_price)
-            logger.debug("Got position from Alpaca")
+            logger.info("Got position from Alpaca")
             return position
         except APIError:
-            logger.debug(f"Could not get position for {self.ticker_data.ticker} from Alpaca")
+            self.ticker_data.side = None
+            logger.info(f"Could not get position for {self.ticker_data.ticker} from Alpaca")
             return None
 
     def close_position(self, quantity: int):
-        quantity = abs(quantity)
         side = 'buy' if quantity < 0 else 'sell'
         logger.info(f"{side} {quantity} shares of {self.ticker_data.ticker} [Close Operation]")
         self._submit_order(side=side, quantity=quantity)
@@ -123,7 +123,9 @@ class AlgoBot:
         )
 
     def submit_order(self, side: str, quantity: int):
-        logger.info(f"{side} {quantity}  of {self.ticker_data.ticker} [Open Operation]")
+        logger.info(
+            f"{side} {quantity}  of {self.ticker_data.ticker} [Open Operation] because last: {self.ticker_data.last_quote} and mean: {self.ticker_data.mean}"
+            f"and side: {self.ticker_data.side} while avg_entry_price: {self.ticker_data.avg_entry_price}")
         self._submit_order(side, quantity)
 
     async def bar_callback(self, bar: Bar):
@@ -134,26 +136,27 @@ class AlgoBot:
         self.ticker_data.rolling_mean = self.ticker_data.rolling_mean[-self.ticker_data.window_size:]
 
         self.update_ticker_data()
-        self.ticker_data.plot()
 
         logger.debug(self.ticker_data)
 
-        side, quantity, first_order = self.ticker_data.determine_action()
-        if side:
-            if not first_order:
-                self.close_position(quantity)
-            self.submit_order(side=side, quantity=quantity)
+        quantity, first_order = self.ticker_data.determine_action()
+        if quantity:
+            if first_order:
+                side = 'buy' if quantity < 0 else 'sell'
+                self.submit_order(side, abs(quantity))
+            side = 'buy' if quantity > 0 else 'sell'
+            self.submit_order(side=side, quantity=abs(quantity))
         else:
             logger.info(
                 f"No action to take because last: {self.ticker_data.last_quote} and mean: {self.ticker_data.mean}"
                 f"and side: {self.ticker_data.side} while avg_entry_price: {self.ticker_data.avg_entry_price}")
 
-    def load_config(self, path: str = CONFIG_FILE_PATH):
+    def load_data(self, path: str = CONFIG_FILE_PATH):
         try:
-            config_dict = json.load(open(path))
+            _data = json.load(open(path))
             logger.info(f"Loaded config from {path}")
-            for key in config_dict.keys():
-                setattr(self.ticker_data, key, config_dict[key])
+            for key in _data.keys():
+                setattr(self.ticker_data, key, _data[key])
         except FileNotFoundError:
             logger.warning(f'Config file not found at {path}')
 
@@ -162,7 +165,11 @@ class AlgoBot:
 
     def run(self):
         self.stream.run()
-        if self.save_config:
-            logger.info(f"Saving config to {CONFIG_FILE_PATH}")
-            json.dump(self.ticker_data.__dict__, open(CONFIG_FILE_PATH, 'w'), indent=4)
+        if self.save_data:
+            _data = {
+                "bars": self.ticker_data.bars,
+                "rolling_mean": self.ticker_data.rolling_mean
+            }
+            logger.info(f"Saving data to {CONFIG_FILE_PATH}")
+            json.dump(_data, open(CONFIG_FILE_PATH, 'w'), indent=4)
         logger.warning('Bye!')

@@ -18,7 +18,7 @@ TICKER = config("TICKER", default="AAPL")
 BAR_SIZE = config("BAR_SIZE", default="minute")
 WINDOW_SIZE = config("WINDOW_SIZE", default=50, cast=int)
 QUANTITY = config("QUANTITY", default=100, cast=int)
-SAVE_CONFIG = config("SAVE_CONFIG", default=False, cast=bool)
+SAVE_DATA = config("SAVE_DATA", default=False, cast=bool)
 
 # Logging configuration
 logger = logging.getLogger("farmer")

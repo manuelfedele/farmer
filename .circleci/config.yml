@@ -26,5 +26,3 @@ jobs:
             coverage html
       - store_artifacts:
           path: htmlcov
-      - store_test_results:
-          path: test-results

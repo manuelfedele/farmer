@@ -1,4 +1,3 @@
-import asyncio
 import dataclasses
 import json
 
@@ -40,36 +39,37 @@ class TickerData:
     def determine_action(self):
         if len(self.bars) < self.window_size:
             logger.warning(f"Not enough bars to calculate moving average")
-            return None, 0
+            return None, 0, False
 
         quantity = abs(self.quantity)
         if not self.side:
             if self.mean > self.last_quote:
-                return "buy", quantity
+                return "buy", quantity, True
             elif self.mean < self.last_quote:
-                return "sell", quantity
+                return "sell", quantity, True
         elif self.last_quote <= self.mean and self.side == 'long':
-            return "sell", quantity
+            return "sell", quantity, False
         elif self.last_quote >= self.mean and self.side == 'short':
-            return "buy", quantity
+            return "buy", quantity, False
         else:
-            return None, 0
+            return None, 0, False
 
     def plot(self):
-        plt.title("Streaming Data")
+        plt.clp()
         plt.clc()
         plt.cld()
-        plt.clt()
+        plt.xticks([x for x in range(1, len(self.bars))])
 
         plt.plot(self.bars, xside="lower", yside="right", label="Quotes", marker='dot', color='blue')
         if self.avg_entry_price:
             avg_entry_price = [self.avg_entry_price for _ in range(len(self.bars))]
-            plt.plot(avg_entry_price, label="Entry Price", xside="lower", yside="right", marker='-', color='green')
+            plt.plot(avg_entry_price, label="Entry Price", marker='-', color='green')
 
         if len(self.rolling_mean) >= self.window_size:
             plt.plot(self.rolling_mean, xside="upper", yside="left", label="Moving Average", marker='dot', color='red')
 
         plt.sleep(0.001)
+        plt.clt()
         plt.show()
 
 
@@ -87,10 +87,11 @@ class AlgoBot:
         self.ticker_data = ticker_data
         self.save_config = save_config
 
-        # self.load_config()
+        self.load_config()
         self.update_ticker_data()
 
-        logger.info(self.ticker_data)
+        logger.debug(self.ticker_data)
+        self.ticker_data.plot()
 
     def update_ticker_data(self):
         try:
@@ -122,22 +123,25 @@ class AlgoBot:
         )
 
     def submit_order(self, side: str, quantity: int):
-        self.close_position()
         logger.info(f"{side} {quantity}  of {self.ticker_data.ticker} [Open Operation]")
         self._submit_order(side, quantity)
 
     async def bar_callback(self, bar: Bar):
         self.ticker_data.last_quote = bar.close
         self.ticker_data.bars.append(bar.close)
+        self.ticker_data.bars = self.ticker_data.bars[-self.ticker_data.window_size:]
         self.ticker_data.rolling_mean.append(self.ticker_data.mean)
+        self.ticker_data.rolling_mean = self.ticker_data.rolling_mean[-self.ticker_data.window_size:]
 
         self.update_ticker_data()
         self.ticker_data.plot()
 
-        logger.info(self.ticker_data)
+        logger.debug(self.ticker_data)
 
-        side, quantity = self.ticker_data.determine_action()
+        side, quantity, first_order = self.ticker_data.determine_action()
         if side:
+            if not first_order:
+                self.close_position(quantity)
             self.submit_order(side=side, quantity=quantity)
         else:
             logger.info("No action to take")
@@ -160,12 +164,3 @@ class AlgoBot:
             logger.info(f"Saving config to {CONFIG_FILE_PATH}")
             json.dump(self.ticker_data.__dict__, open(CONFIG_FILE_PATH, 'w'), indent=4)
         logger.warning('Bye!')
-
-        # loop = asyncio.get_event_loop()
-        # try:
-        #     loop.run_until_complete(self.stream._run_forever())
-        # except KeyboardInterrupt:
-        #     if self.save_config:
-        #         logger.info(f"Saving config to {CONFIG_FILE_PATH}")
-        #         json.dump(self.ticker_data.__dict__, open(CONFIG_FILE_PATH, 'w'), indent=4)
-        #     logger.warning('Bye!')

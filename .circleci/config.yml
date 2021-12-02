@@ -8,6 +8,7 @@ jobs:
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
       - run:
+          name: Setup testing environment
           command: |
             python3 -m venv venv
             . venv/bin/activate
@@ -20,9 +21,9 @@ jobs:
           name: Running tests
           command: |
             . venv/bin/activate
-            pytest
+            coverage run pytest
+            coverage html
       - store_artifacts:
-          path: test-reports/
-          destination: python_app
+          path: htmlcov
       - store_test_results:
           path: test-results

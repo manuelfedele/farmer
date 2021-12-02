@@ -1,8 +1,9 @@
 # Configuration
-1) Create a virtual environment and activate it.
-2) `pip install -r requirements.txt`
-3) Setup .env file (see .env.example)
-4) Run the bot :
+1) Create a virtual environment `virtualenv -p python3 venv`
+2) Activate the virtual environment `source venv/bin/activate`
+3) `pip install -r requirements.txt`
+4) Setup .env file (see .env.example)
+5) Run the bot :
     `python main.py`
 
 Things to care about:

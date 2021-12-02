@@ -1,0 +1,5 @@
+config.json
+.env
+__pycache__
+.idea
+.vscode

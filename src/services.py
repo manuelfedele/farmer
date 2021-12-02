@@ -66,7 +66,7 @@ class TickerData:
             plt.plot(avg_entry_price, label="Entry Price", marker='-', color='green')
 
         if len(self.rolling_mean) >= self.window_size:
-            plt.plot(self.rolling_mean, xside="upper", yside="left", label="Moving Average", marker='dot', color='red')
+            plt.plot(self.rolling_mean, label="Moving Average", marker='dot', color='red')
 
         plt.sleep(0.001)
         plt.clt()
@@ -95,15 +95,15 @@ class AlgoBot:
 
     def update_ticker_data(self):
         try:
-            logger.info(f"Trying to fetch position from Alpaca for {self.ticker_data.ticker}")
+            logger.debug(f"Trying to fetch position from Alpaca for {self.ticker_data.ticker}")
             position = self.api.get_position(self.ticker_data.ticker)
             self.ticker_data.quantity = int(position.qty)
             self.ticker_data.side = position.side
             self.ticker_data.avg_entry_price = float(position.avg_entry_price)
-            logger.info("Got position from Alpaca")
+            logger.debug("Got position from Alpaca")
             return position
         except APIError:
-            logger.warning(f"Could not get position for {self.ticker_data.ticker} from Alpaca")
+            logger.debug(f"Could not get position for {self.ticker_data.ticker} from Alpaca")
             return None
 
     def close_position(self, quantity: int):
@@ -144,7 +144,9 @@ class AlgoBot:
                 self.close_position(quantity)
             self.submit_order(side=side, quantity=quantity)
         else:
-            logger.info("No action to take")
+            logger.info(
+                f"No action to take because last: {self.ticker_data.last_quote} and mean: {self.ticker_data.mean}"
+                f"and side: {self.ticker_data.side} while avg_entry_price: {self.ticker_data.avg_entry_price}")
 
     def load_config(self, path: str = CONFIG_FILE_PATH):
         try:

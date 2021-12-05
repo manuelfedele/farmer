@@ -1,93 +1,41 @@
+import datetime
 import logging
-import threading
 
-from alpaca_trade_api import Stream, REST
+import msgpack
 
-from src.abstractions import Strategy
-from src.settings import q, SYMBOL, CRYPTO_SYMBOLS, QUANTITY
+from src.mappings import mappings
 
 logger = logging.getLogger("farmer")
 
 
-class Client:
-    def __init__(self, stream: Stream, api: REST, strategy: Strategy):
-        self.stream = stream
-        self.api = api
-        self.strategy = strategy
+def map_entity(symbol: str, data: dict, _type: str) -> dict:
+    """
+    Maps the received entity to the corresponding mapping
+    Args:
+        symbol: the symbol of the entity
+        data: The entity to be mapped
+        _type: The type of entity
 
-        self.crypto_symbols = CRYPTO_SYMBOLS
+    Returns:
+        The mapped entity
 
-    def start(self):
-        """
-        Starts the client
-        Returns:
-            None
-
-        """
-        logger.info(f"Starting {self.__class__.__name__}")
-        if self.strategy.symbol in self.crypto_symbols:
-            # self.stream.subscribe_crypto_trades(
-            #     self.strategy.trade_callback, self.strategy.ticker.symbol
-            # )
-            self.stream.subscribe_crypto_bars(
-                self.strategy.bar_callback,
-                self.strategy.symbol,
-                self.strategy.bar_size,
-            )
-            # self.stream.subscribe_crypto_quotes(
-            #     self.strategy.quote_callback, self.strategy.ticker.symbol
-            # )
-        else:
-            self.stream.subscribe_trades(
-                self.strategy.trade_callback, self.strategy.symbol
-            )
-
-            self.stream.subscribe_bars(
-                self.strategy.bar_callback,
-                self.strategy.symbol,
-                self.strategy.bar_size,
-            )
-            self.stream.subscribe_quotes(
-                self.strategy.quote_callback, self.strategy.symbol
-            )
-
-        self.stream.run()  # stream.run() is blocking, so stop will be executed after stream.run() returns
-        self.stop()
-
-    def stop(self) -> None:
-        """
-        Stops the client
-        Returns:
-            None
-        """
-        logger.info(f"Stopping {self.__class__.__name__}")
-
-
-class OrderDispatcher:
-    def __init__(self, api: REST):
-        self.queue = q
-        self.api = api
-
-    def start(self):
-        logger.info(f"Starting {self.__class__.__name__}")
-        threading.Thread(name='Dispatcher', target=self.listen, daemon=True).start()
-
-    def place_order(self, side: str = "buy", qty: int = QUANTITY, price: float = 0.0):
+    """
+    data['S'] = symbol
+    mapping = mappings[_type]
+    _mapped_dict = {}
+    for key, value in data.items():
         try:
-            logger.info(f"Placing order {side} {qty} {price} on {SYMBOL}")
-            self.api.submit_order(
-                symbol=SYMBOL,
-                side=side,
-                type='market',
-                qty=qty,
-                time_in_force='day',
-            )
-        except Exception as e:
-            logger.error(f"Error while placing order: {e}")
+            _key = mapping[key]
 
-    def listen(self):
-        while True:
-            message = self.queue.get()
-            logger.debug(f"Received message {message}")
-            self.place_order(**message)
-            self.queue.task_done()
+            if isinstance(value, msgpack.ext.Timestamp):
+                value = value.to_datetime()
+
+            elif isinstance(value, str) and 'time' in _key.lower():
+                try:
+                    value = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+                except ValueError:
+                    pass
+            _mapped_dict[mapping[key]] = value
+        except KeyError:
+            logger.debug(f"Key {key} not found in mapping.")
+    return _mapped_dict

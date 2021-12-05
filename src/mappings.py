@@ -1,10 +1,3 @@
-import datetime
-import logging
-
-import msgpack.ext
-
-logger = logging.getLogger("farmer")
-
 trade_mapping = {
     "i": "id",
     "S": "symbol",
@@ -63,31 +56,8 @@ luld_mapping = {
     "z": "tape"
 }
 
-
-def mapper(data: dict, mapping: dict) -> dict:
-    """
-    Maps a dict to another dict.
-    Args:
-        mapping:
-        data:
-
-    Returns:
-        mapped_data:
-    """
-    _mapped_dict = {}
-    for key, value in data.items():
-        try:
-            _key = mapping[key]
-
-            if isinstance(value, msgpack.ext.Timestamp):
-                value = value.to_datetime()
-
-            elif isinstance(value, str) and 'time' in _key.lower():
-                try:
-                    value = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-                except ValueError:
-                    pass
-            _mapped_dict[mapping[key]] = value
-        except KeyError:
-            logger.debug(f"Key {key} not found in mapping.")
-    return _mapped_dict
+mappings = {
+    "bar": bar_mapping,
+    "quote": quote_mapping,
+    "trade": trade_mapping
+}

@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,6 +13,25 @@ class DBMixin:
     @classmethod
     def get_last(cls, session, limit=50):
         return session.query(cls).order_by(cls.timestamp.desc()).limit(limit).all()
+
+    @classmethod
+    def get_or_create(cls, session, **kwargs):
+        symbol = kwargs.get('symbol')
+        exchange = kwargs.get('exchange')
+        timestamp = kwargs.get('timestamp')
+        instance = session.query(cls).filter_by(symbol=symbol, exchange=exchange, timestamp=timestamp).first()
+        if instance:
+            return session
+        else:
+            instance = cls(**kwargs)
+            session.add(instance)
+            return session
+
+    @classmethod
+    def delete_old_entries(cls, session, before: datetime.datetime = None):
+        if not before:
+            before = datetime.datetime.now() - datetime.timedelta(minutes=1)
+        return session.query(cls).filter(cls.timestamp < before).delete()
 
 
 class Bars(Base, DBMixin):
@@ -30,18 +51,16 @@ class Bars(Base, DBMixin):
     trade_count = Column(Integer)
     vwap = Column(Float)
 
-    @classmethod
-    def get_or_create(cls, session, **kwargs):
-        symbol = kwargs.get('symbol')
-        exchange = kwargs.get('exchange')
-        timestamp = kwargs.get('timestamp')
-        instance = session.query(cls).filter_by(symbol=symbol, exchange=exchange, timestamp=timestamp).first()
-        if instance:
-            return session
-        else:
-            instance = cls(**kwargs)
-            session.add(instance)
-            return session
+
+class Quotes(Base, DBMixin):
+    __tablename__ = 'quotes'
+    timestamp = Column(DateTime, primary_key=True)
+    symbol = Column(String(10), primary_key=True)
+    exchange = Column(String(10), primary_key=True)
+    ask_size = Column(Integer)
+    ask_price = Column(Float)
+    bid_size = Column(Integer)
+    bid_price = Column(Float)
 
 # from peewee import Model, FloatField, CharField, IntegerField, DateTimeField, CompositeKey
 #

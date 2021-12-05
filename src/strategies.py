@@ -6,20 +6,20 @@ from src.settings import QUANTITY
 logger = logging.getLogger("farmer")
 
 
-def moving_average_crypto(position: dict, quote: dict, mean: float) -> Union[dict, None]:
+def moving_average_crypto(position: dict, bar: dict, mean: float) -> Union[dict, None]:
     """
     Moving average strategy.
     Args:
         position: The actual position. At the moment shorting CRYPTO is not supported.
-        quote: The last quote received.
+        bar: The bar quote received.
         mean: The moving average.
 
     Returns:
 
     """
+    last = bar["close"]
     if not position:
         # We have to buy if condition is met
-        last = quote["ask_price"]
         if last > mean:
             logger.info(f"Last price is higher than the moving average l:{last} > m:{mean}")
             return {"side": "buy", "price": last, "qty": QUANTITY}
@@ -29,7 +29,6 @@ def moving_average_crypto(position: dict, quote: dict, mean: float) -> Union[dic
                 f"l:{last} > m:{mean} a position already exists. Doing Nothing")
     else:
         # We have to sell if condition is met
-        last = quote["bid_price"]
         if last <= mean:
             logger.info(f"Last price is lower than the moving average l:{last} < m:{mean}")
             return {"side": "sell", "price": last, "qty": position["qty"]}

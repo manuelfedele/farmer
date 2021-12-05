@@ -183,9 +183,6 @@ class OrderDispatcher:
             Quotes.delete_old_entries(self.session)
             self.apply_strategy(message)
 
-        elif message["type"] == "quote":
-            self.save(message, Quotes)
-
         else:
             logger.debug(f"Message type {message['type']} not supported.")
 

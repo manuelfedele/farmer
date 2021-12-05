@@ -3,10 +3,6 @@ import queue
 from pathlib import Path
 
 from decouple import config
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from src.models import Base
 
 # Generic configuration
 BASE_DIR = config("BASE_DIR", default=Path(__file__).resolve().parent.parent)
@@ -40,10 +36,3 @@ logger.setLevel(config('LOG_LEVEL', default='INFO').upper())
 
 # Queue
 q = queue.Queue()
-
-# Database
-engine = create_engine(f"sqlite:///{DATABASE_PATH}", echo=False, future=True)
-Session = sessionmaker()
-Session.configure(bind=engine)
-session = Session()
-Base.metadata.create_all(engine)

@@ -1,12 +1,16 @@
 import logging
 from typing import Union
 
+import numpy as np
+from alpaca_trade_api import REST
+
+from src.helpers import get_historical_data
 from src.settings import QUANTITY
 
 logger = logging.getLogger("farmer")
 
 
-def moving_average_crypto(position: dict, bar: dict, mean: float) -> Union[dict, None]:
+def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
     """
     Moving average strategy.
     Args:
@@ -17,7 +21,17 @@ def moving_average_crypto(position: dict, bar: dict, mean: float) -> Union[dict,
     Returns:
 
     """
+
+    positions = api.list_positions()
+    if not positions:
+        position = None
+    else:
+        position = positions[0]
+
+    historical_data = get_historical_data(api)
+    mean = np.mean([b['close'] for b in historical_data])
     last = bar["close"]
+
     if not position:
         # We have to buy if condition is met
         if last > mean:

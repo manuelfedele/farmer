@@ -1,0 +1,29 @@
+site_name: Farmer
+theme:
+  name: material
+  features:
+    - content.code.annotate
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+  - pymdownx.snippets
+  - footnotes
+  - tables
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.superfences:
+      # make exceptions to highlighting of code:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+plugins:
+  - search
+  - mermaid2
+  - mkdocstrings:
+      watch:
+        - src
+        - ./

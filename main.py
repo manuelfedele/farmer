@@ -1,8 +1,9 @@
 import os
+import threading
 
 from alpaca_trade_api import Stream, REST
 
-from src.helpers import Ticker
+from src.helpers import Ticker, Client, OrderDispatcher
 from src.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL, DATA_FEED, BAR_SIZE, SYMBOL
 from src.strategies import MovingAverage
 
@@ -17,13 +18,15 @@ os.environ.setdefault('APCA_API_SECRET_KEY', APCA_API_SECRET_KEY)
 os.environ.setdefault('APCA_API_BASE_URL', APCA_API_BASE_URL)
 
 if __name__ == '__main__':
-    stream = Stream(data_feed=DATA_FEED)
-    api = REST()
-    ticker = Ticker(symbol=SYMBOL, bar_size=BAR_SIZE)
 
-    strategy = MovingAverage(
-        ticker=ticker,
-        stream=stream,
-        api=api,
-    )
-    strategy.start()
+    # These are Alpaca's interfaces for streaming and REST API
+    stream = Stream(data_feed=DATA_FEED, raw_data=True)
+    api = REST(raw_data=True)
+
+    ticker = Ticker(symbol=SYMBOL, bar_size=BAR_SIZE)
+    strategy = MovingAverage(ticker=ticker, api=api)
+    client = Client(api=api, stream=stream, strategy=strategy)
+
+    dispatcher = OrderDispatcher(api=api)
+    thread = threading.Thread(name='OrderDispatcher', target=dispatcher.listen, daemon=True).start()
+    client.start()

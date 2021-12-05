@@ -9,6 +9,28 @@ class DBMixin:
     timestamp = None
 
     @classmethod
+    def get_last(cls, session, limit=50):
+        return session.query(cls).order_by(cls.timestamp.desc()).limit(limit).all()
+
+
+class Bars(Base, DBMixin):
+    __tablename__ = 'bars'
+    # __table_args__ = (
+    #     UniqueConstraint('symbol', 'exchange', 'timestamp', name='uix_bars_symbol_timestamp'),
+    # )
+
+    symbol = Column(String(10), primary_key=True)
+    exchange = Column(String(10), primary_key=True)
+    timestamp = Column(DateTime, primary_key=True)
+    high = Column(Float)
+    low = Column(Float)
+    open = Column(Float)
+    close = Column(Float)
+    volume = Column(Integer)
+    trade_count = Column(Integer)
+    vwap = Column(Float)
+
+    @classmethod
     def get_or_create(cls, session, **kwargs):
         symbol = kwargs.get('symbol')
         exchange = kwargs.get('exchange')
@@ -20,29 +42,6 @@ class DBMixin:
             instance = cls(**kwargs)
             session.add(instance)
             return session
-
-    @classmethod
-    def get_last(cls, session, limit=50):
-        return session.query(cls).order_by(cls.timestamp.desc()).limit(limit).all()
-
-
-class Bars(Base, DBMixin):
-    __tablename__ = 'bars'
-    __table_args__ = (
-        UniqueConstraint('symbol', 'exchange', 'timestamp', name='uix_bars_symbol_timestamp'),
-    )
-
-    id = Column(Integer, primary_key=True)
-    symbol = Column(String(10))
-    exchange = Column(String(10))
-    high = Column(Float)
-    low = Column(Float)
-    open = Column(Float)
-    close = Column(Float)
-    volume = Column(Integer)
-    timestamp = Column(DateTime)
-    trade_count = Column(Integer)
-    vwap = Column(Float)
 
 # from peewee import Model, FloatField, CharField, IntegerField, DateTimeField, CompositeKey
 #

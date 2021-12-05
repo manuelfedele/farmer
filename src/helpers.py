@@ -71,6 +71,7 @@ class OrderDispatcher:
 
     def place_order(self, side: str = "buy", qty: int = QUANTITY, price: float = 0.0):
         try:
+            logger.info(f"Placing order {side} {qty} {price} on {SYMBOL}")
             self.api.submit_order(
                 symbol=SYMBOL,
                 side=side,

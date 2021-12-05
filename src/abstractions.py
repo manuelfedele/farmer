@@ -4,9 +4,9 @@ from alpaca_trade_api import REST
 
 
 class Strategy(abc.ABC):
-    @abc.abstractmethod
-    def __init__(self, api: REST, *args, **kwargs):
-        self.api = api
+    symbol: str
+    bar_size: int
+    api: REST
 
     @abc.abstractmethod
     async def bar_callback(self, bar):

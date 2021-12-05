@@ -1,3 +1,5 @@
+import threading
+
 from alpaca_trade_api import Stream, REST
 
 from src.abstractions import Strategy
@@ -62,6 +64,10 @@ class OrderDispatcher:
     def __init__(self, api: REST):
         self.queue = q
         self.api = api
+
+    def start(self):
+        logger.info(f"Starting {self.__class__.__name__}")
+        threading.Thread(name='OrderDispatcher', target=self.listen, daemon=True).start()
 
     def place_order(self, side: str = "buy", qty: int = QUANTITY, price: float = 0.0):
         try:

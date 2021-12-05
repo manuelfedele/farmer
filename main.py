@@ -1,5 +1,4 @@
 import os
-import threading
 
 from alpaca_trade_api import Stream, REST
 
@@ -25,6 +24,7 @@ if __name__ == '__main__':
     strategy = MovingAverageCrypto(api=api, symbol=SYMBOL, bar_size=BAR_SIZE)
     client = Client(api=api, stream=stream, strategy=strategy)
 
-    dispatcher = OrderDispatcher(api=api)
-    thread = threading.Thread(name='OrderDispatcher', target=dispatcher.listen, daemon=True).start()
+    order_dispatcher = OrderDispatcher(api=api)
+
+    order_dispatcher.start()
     client.start()

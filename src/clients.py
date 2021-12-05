@@ -163,7 +163,7 @@ class OrderDispatcher:
 
     def apply_strategy(self, message):
         mean = np.mean([b.close for b in Bars.get_last(self.session, WINDOW_SIZE)])
-        result = self.strategy(position=self.position, quote=message, mean=mean)
+        result = self.strategy(position=self.position, bar=message, mean=mean)
         if result:
             self.place_order(**result)
             self.position = self.get_position()

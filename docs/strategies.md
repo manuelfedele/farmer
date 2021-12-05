@@ -1,4 +1,4 @@
-::: src.strategies.MovingAverage
+::: src.strategies.MovingAverageCrypto
     handler: python
     rendering:
       show_root_heading: true

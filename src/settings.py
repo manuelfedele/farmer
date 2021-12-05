@@ -19,10 +19,10 @@ APCA_API_BASE_URL = config('APCA_API_BASE_URL', default='https://paper-api.alpac
 DATA_FEED = config('DATA_FEED', default='iex')  # <- replace to SIP if you have PRO subscription
 
 # App configuration
-SYMBOL = config("SYMBOL", default="AAPL")
+SYMBOL = config("SYMBOL", default="BTCUSD")
 BAR_SIZE = config("BAR_SIZE", default="minute")
 WINDOW_SIZE = config("WINDOW_SIZE", default=50, cast=int)
-QUANTITY = config("QUANTITY", default=100, cast=int)
+QUANTITY = config("QUANTITY", default=1, cast=float)
 SAVE_DATA = config("SAVE_DATA", default=False, cast=bool)
 ALLOWED_CRYPTO_EXCHANGES = config("ALLOWED_CRYPTO_EXCHANGES", default='CBSE,', cast=lambda x: x.split(','))
 CRYPTO_SYMBOLS = config("CRYPTO_SYMBOLS", default='BTCUSD, BCHUSD, ETHUSD, LTCUSD', cast=lambda x: x.split(','))

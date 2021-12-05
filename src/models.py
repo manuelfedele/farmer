@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -10,7 +10,10 @@ class DBMixin:
 
     @classmethod
     def get_or_create(cls, session, **kwargs):
-        instance = session.query(cls).filter_by(**kwargs).first()
+        symbol = kwargs.get('symbol')
+        exchange = kwargs.get('exchange')
+        timestamp = kwargs.get('timestamp')
+        instance = session.query(cls).filter_by(symbol=symbol, exchange=exchange, timestamp=timestamp).first()
         if instance:
             return session
         else:
@@ -25,6 +28,9 @@ class DBMixin:
 
 class Bars(Base, DBMixin):
     __tablename__ = 'bars'
+    __table_args__ = (
+        UniqueConstraint('symbol', 'exchange', 'timestamp', name='uix_bars_symbol_timestamp'),
+    )
 
     id = Column(Integer, primary_key=True)
     symbol = Column(String(10))

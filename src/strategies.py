@@ -39,8 +39,8 @@ def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
             return {"side": "buy", "price": last, "qty": QUANTITY}
         else:
             logger.info(
-                f"Last price is higher than the moving average "
-                f"l:{last} > m:{mean} and a position already exists. Doing Nothing")
+                f"Last price is lower than the moving average "
+                f"l:{last} < m:{mean} and we have no positions. Doing Nothing")
     else:
         # We have to sell if condition is met
         if last <= mean:
@@ -48,5 +48,5 @@ def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
             return {"side": "sell", "price": last, "qty": position["qty"]}
         else:
             logger.info(
-                f"Last price is lower than the moving average "
-                f"l:{last} < m:{mean} but no position was found. Doing Nothing")
+                f"Last price is above the moving average "
+                f"l:{last} > m:{mean} but a position already exists. Doing Nothing")

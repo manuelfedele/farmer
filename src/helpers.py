@@ -70,7 +70,7 @@ class OrderDispatcher:
 
     def start(self):
         logger.info(f"Starting {self.__class__.__name__}")
-        threading.Thread(name='OrderDispatcher', target=self.listen, daemon=True).start()
+        threading.Thread(name='Dispatcher', target=self.listen, daemon=True).start()
 
     def place_order(self, side: str = "buy", qty: int = QUANTITY, price: float = 0.0):
         try:

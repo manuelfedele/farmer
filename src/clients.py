@@ -1,5 +1,6 @@
 import logging
 import threading
+from queue import Queue
 from typing import Callable
 
 from alpaca_trade_api import Stream, REST
@@ -15,14 +16,23 @@ class PublisherClient:
     PublisherClient is a class that subscribes to the Alpaca REST API and then pushes messages to the queue so that
     the Dispatcher can process them sequentially.
     """
-    def __init__(self, stream: Stream, api: REST, symbol: str = SYMBOL, bar_size: int = BAR_SIZE):
+
+    def __init__(
+            self,
+            stream: Stream,
+            api: REST,
+            symbol: str = SYMBOL,
+            bar_size: int = BAR_SIZE,
+            crypto_symbols: list = CRYPTO_SYMBOLS,
+            queue: Queue = q,
+    ):
         self.stream = stream
         self.api = api
         self.symbol = symbol
         self.bar_size = bar_size
-        self.queue = q
+        self.crypto_symbols = crypto_symbols
 
-        self.crypto_symbols = CRYPTO_SYMBOLS
+        self.queue = queue
 
     def start(self):
         """
@@ -115,12 +125,19 @@ class SubscriberClient:
     """
     Class that handles the order dispatching in synchronous way
     """
-    def __init__(self, api: REST, strategy: Callable, symbol: str = SYMBOL):
+
+    def __init__(
+            self,
+            api: REST,
+            strategy: Callable,
+            symbol: str = SYMBOL,
+            queue: Queue = q,
+    ):
         self.api = api
         self.strategy = strategy
         self.symbol = symbol
 
-        self.queue = q
+        self.queue = queue
 
     def start(self):
         logger.info(f"Starting {self.__class__.__name__}")

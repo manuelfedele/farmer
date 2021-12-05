@@ -56,6 +56,21 @@ def get_historical_data(
         exchanges: list = ALLOWED_CRYPTO_EXCHANGES,
         limit: int = WINDOW_SIZE
 ) -> list:
+    """
+    Retrieves historical data from the API
+    Args:
+        api: The API to use
+        symbol: The symbol to retrieve data for
+        timeframe: The timeframe to retrieve data for
+        start: The start date to retrieve data for
+        end: The end date to retrieve data for
+        exchanges: The exchanges to retrieve data for
+        limit: The limit of data to retrieve
+
+    Returns:
+        The retrieved data
+
+    """
     bars = api.get_crypto_bars_iter(
         symbol=symbol,
         timeframe=timeframe,
@@ -75,6 +90,20 @@ def place_order(
         qty: int = QUANTITY,
         time_in_force: str = "day"
 ) -> int:
+    """
+    Places an order on the API
+    Args:
+        api: The API to use
+        symbol: The symbol to place the order for
+        side: The side of the order
+        type: The type of order
+        qty: The quantity of the order
+        time_in_force: The time in force of the order
+
+    Returns:
+        The order ID
+
+    """
     try:
         logger.info(f"Placing order {side} {qty} on {SYMBOL}")
         return api.submit_order(

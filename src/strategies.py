@@ -4,7 +4,7 @@ from typing import Union
 import numpy as np
 from alpaca_trade_api import REST
 
-from src.helpers import get_historical_data
+from src.helpers import get_historical_data, get_position
 from src.settings import QUANTITY
 
 logger = logging.getLogger("farmer")
@@ -21,14 +21,10 @@ def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
 
     """
 
-    positions = api.list_positions()
-    if not positions:
-        position = None
-    else:
-        position = positions[0]
+    position = get_position(api, bar["symbol"])
 
     historical_data = get_historical_data(api)
-    mean = np.mean([b['close'] for b in historical_data])
+    mean = round(np.mean([b['close'] for b in historical_data]), 2)
     last = bar["close"]
 
     if not position:

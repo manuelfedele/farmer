@@ -2,6 +2,8 @@ import datetime
 import logging
 
 import msgpack
+import pandas as pd
+import pytz
 from alpaca_trade_api import REST, TimeFrame, TimeFrameUnit
 
 from src.mappings import mappings
@@ -54,7 +56,8 @@ def get_historical_data(
         start=None,
         end=None,
         exchanges: list = ALLOWED_CRYPTO_EXCHANGES,
-        limit: int = WINDOW_SIZE
+        limit: int = WINDOW_SIZE,
+        tz: str = "America/New_York"
 ) -> list:
     """
     Retrieves historical data from the API
@@ -66,11 +69,21 @@ def get_historical_data(
         end: The end date to retrieve data for
         exchanges: The exchanges to retrieve data for
         limit: The limit of data to retrieve
+        tz: The timezone to retrieve data for
 
     Returns:
         The retrieved data
 
     """
+
+    if not end:
+        end = datetime.datetime.now(tz=pytz.timezone(tz))
+    if not start:
+        start = end - datetime.timedelta(hours=1)
+
+    end = pd.Timestamp(end.strftime("%Y-%m-%dT%H:%M"), tz=tz).isoformat()
+    start = pd.Timestamp(start.strftime("%Y-%m-%dT%H:%M"), tz=tz).isoformat()
+
     bars = api.get_crypto_bars_iter(
         symbol=symbol,
         timeframe=timeframe,
@@ -88,7 +101,8 @@ def place_order(
         side: str = "buy",
         type: str = "market",
         qty: int = QUANTITY,
-        time_in_force: str = "day"
+        time_in_force: str = "day",
+        **kwargs
 ) -> int:
     """
     Places an order on the API
@@ -115,3 +129,23 @@ def place_order(
         )
     except Exception as e:
         logger.error(f"Error while placing order: {e}")
+
+
+def get_position(
+        api: REST,
+        symbol: str = SYMBOL
+) -> dict:
+    """
+    Retrieves the current position of the symbol
+    Args:
+        api: The API to use
+        symbol: The symbol to retrieve the position for
+
+    Returns:
+        The retrieved position
+    """
+    try:
+        return api.get_position(symbol)
+    except Exception as e:
+        logger.debug(e)
+        return None

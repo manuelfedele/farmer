@@ -10,17 +10,21 @@ from src.settings import QUANTITY, ALLOWED_CRYPTO_EXCHANGES
 logger = logging.getLogger("farmer")
 
 
-def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
+def moving_average_crypto(
+        api: REST,
+        bar: dict,
+        allowed_crypto_exchanges: list = ALLOWED_CRYPTO_EXCHANGES
+) -> Union[dict, None]:
     """
     Moving average strategy.
     Args:
         api: The api object.
         bar: The bar quote received.
-
+        allowed_crypto_exchanges: The list of allowed crypto exchanges.
     Returns:
 
     """
-    if bar["exchange"] not in ALLOWED_CRYPTO_EXCHANGES:
+    if bar["exchange"] not in allowed_crypto_exchanges:
         return
 
     position = get_position(api, bar["symbol"])

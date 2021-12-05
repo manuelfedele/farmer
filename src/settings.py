@@ -31,7 +31,9 @@ CRYPTO_SYMBOLS = config("CRYPTO_SYMBOLS", default='BTCUSD, BCHUSD, ETHUSD, LTCUS
 logger = logging.getLogger("farmer")
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
-    '{asctime} - {threadName} - {thread} - {name} - {lineno:^4d} - {levelname:^8s} - {message}', style='{')
+    '{asctime} - {threadName} - {thread} - {name} - [{filename:>15s}:{lineno:^4d}] - {levelname:^8s} - {message}',
+    style='{'
+)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(config('LOG_LEVEL', default='INFO').upper())

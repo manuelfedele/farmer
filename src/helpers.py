@@ -1,9 +1,12 @@
+import logging
 import threading
 
 from alpaca_trade_api import Stream, REST
 
 from src.abstractions import Strategy
-from src.settings import SYMBOL, logger, q, CRYPTO_SYMBOLS, QUANTITY
+from src.settings import q, SYMBOL, CRYPTO_SYMBOLS, QUANTITY
+
+logger = logging.getLogger("farmer")
 
 
 class Client:

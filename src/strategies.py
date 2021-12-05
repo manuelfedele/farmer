@@ -1,10 +1,14 @@
+import logging
+
 import numpy as np
 from alpaca_trade_api import TimeFrame, TimeFrameUnit, REST
 
 from src.abstractions import Strategy
 from src.mappings import mapper, bar_mapping
 from src.models import Bars
-from src.settings import q, ALLOWED_CRYPTO_EXCHANGES, session, logger, SYMBOL, BAR_SIZE, QUANTITY, WINDOW_SIZE
+from src.settings import q, ALLOWED_CRYPTO_EXCHANGES, session, SYMBOL, BAR_SIZE, QUANTITY, WINDOW_SIZE
+
+logger = logging.getLogger("farmer")
 
 
 class MovingAverageCrypto(Strategy):
@@ -60,17 +64,22 @@ class MovingAverageCrypto(Strategy):
             None
         """
         position = self.get_position()
-        if position is None:
-            if last > mean:
-                logger.info(f"Last price {last} is higher than the moving average {mean}")
+        if last > mean:
+            if not position:
+                logger.info(f"Last price is higher than the moving average l:{last} > m:{mean}")
                 self.queue.put({"side": "buy", "price": last, "qty": QUANTITY})
-                return
-        else:
-            if last < mean:
-                logger.info(f"Last price {last} is lower than the moving average {mean}")
+            else:
+                logger.info(
+                    f"Last price is higher than the moving average "
+                    f"l:{last} > m:{mean} a position already exists. Doing Nothing")
+        elif last <= mean:
+            if position:
+                logger.info(f"Last price is lower than the moving average l:{last} < m:{mean}")
                 self.queue.put({"side": "sell", "price": last, "qty": position["qty"]})
-                return
-        logger.info(f"Last price {last} and moving average {mean} and position {position}. Doing nothing")
+            else:
+                logger.info(
+                    f"Last price is lower than the moving average "
+                    f"l:{last} < m:{mean} but no position found. Doing Nothing")
 
     async def bar_callback(self, bar: dict) -> None:
         """
@@ -86,10 +95,10 @@ class MovingAverageCrypto(Strategy):
         _session = session
         if mapped_bar["exchange"] in ALLOWED_CRYPTO_EXCHANGES:
             _session = Bars.get_or_create(_session, **mapped_bar)
-
-        _session.commit()
-        last_bars = Bars.get_last(_session, WINDOW_SIZE)
-        self.apply_strategy(last_bars[-1].close, np.mean([b.close for b in last_bars]))
+            _session.commit()
+            last_bars = Bars.get_last(_session, WINDOW_SIZE)
+            mean = round(np.mean([b.close for b in last_bars]), 2)
+            self.apply_strategy(last_bars[-1].close, mean)
 
     async def quote_callback(self, quote: dict) -> None:
         """

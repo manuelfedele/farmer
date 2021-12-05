@@ -1,8 +1,9 @@
 import datetime
+import logging
 
 import msgpack.ext
 
-from src.settings import logger
+logger = logging.getLogger("farmer")
 
 trade_mapping = {
     "i": "id",
@@ -88,5 +89,5 @@ def mapper(data: dict, mapping: dict) -> dict:
                     pass
             _mapped_dict[mapping[key]] = value
         except KeyError:
-            logger.warning(f"Key {key} not found in mapping.")
+            logger.debug(f"Key {key} not found in mapping.")
     return _mapped_dict

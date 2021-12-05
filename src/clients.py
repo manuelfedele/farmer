@@ -10,7 +10,11 @@ from src.settings import BAR_SIZE, CRYPTO_SYMBOLS, q, SYMBOL
 logger = logging.getLogger("farmer")
 
 
-class SubscriberClient:
+class PublisherClient:
+    """
+    PublisherClient is a class that subscribes to the Alpaca REST API and then pushes messages to the queue so that
+    the Dispatcher can process them sequentially.
+    """
     def __init__(self, stream: Stream, api: REST, symbol: str = SYMBOL, bar_size: int = BAR_SIZE):
         self.stream = stream
         self.api = api
@@ -107,7 +111,10 @@ class SubscriberClient:
         pass
 
 
-class OrderDispatcher:
+class SubscriberClient:
+    """
+    Class that handles the order dispatching in synchronous way
+    """
     def __init__(self, api: REST, strategy: Callable, symbol: str = SYMBOL):
         self.api = api
         self.strategy = strategy
@@ -120,12 +127,13 @@ class OrderDispatcher:
         threading.Thread(name='Dispatcher', target=self.listen, daemon=True).start()
 
     def apply_strategy(self, message):
-        result = self.strategy(api=self.api, bar=message)
-        if result:
-            place_order(self.api, **result)
+        signal = self.strategy(api=self.api, bar=message)
+        if signal:
+            place_order(self.api, **signal)
 
     def process_message(self, message: dict):
         if message["type"] == "bar":
+            logger.info(f"Processing bar: {message}")
             self.apply_strategy(message)
         else:
             logger.debug(f"Message type {message['type']} not supported.")

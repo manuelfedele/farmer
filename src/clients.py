@@ -185,7 +185,6 @@ class OrderDispatcher:
 
         elif message["type"] == "quote":
             self.save(message, Quotes)
-            self.apply_strategy(message)
 
         else:
             logger.debug(f"Message type {message['type']} not supported.")

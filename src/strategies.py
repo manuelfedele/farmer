@@ -5,7 +5,7 @@ import numpy as np
 from alpaca_trade_api import REST
 
 from src.helpers import get_historical_data, get_position
-from src.settings import QUANTITY
+from src.settings import QUANTITY, ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
 
@@ -20,6 +20,8 @@ def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
     Returns:
 
     """
+    if bar["exchange"] not in ALLOWED_CRYPTO_EXCHANGES:
+        return
 
     position = get_position(api, bar["symbol"])
 

@@ -6,7 +6,7 @@ import numpy as np
 from alpaca_trade_api import Stream, REST, TimeFrame, TimeFrameUnit
 
 from src.helpers import map_entity
-from src.models import Bars, Quotes
+from src.models import Bars, Quotes, Base
 from src.settings import Session, BAR_SIZE, CRYPTO_SYMBOLS, q, ALLOWED_CRYPTO_EXCHANGES, WINDOW_SIZE, SYMBOL, QUANTITY
 
 logger = logging.getLogger("farmer")
@@ -168,20 +168,24 @@ class OrderDispatcher:
             self.place_order(**result)
             self.position = self.get_position()
 
+    def save(self, message: dict, model: Base):
+        message.pop('type')
+        if message["exchange"] in ALLOWED_CRYPTO_EXCHANGES:
+            model.get_or_create(self.session, **message)
+            self.session.commit()
+
     def process_message(self, message: dict):
         if message["type"] == "bar":
-            message.pop('type')
-            if message["exchange"] in ALLOWED_CRYPTO_EXCHANGES:
-                self.session = Bars.get_or_create(self.session, **message)
-                self.session.commit()
-                logger.info(f"Received bar: {message['close']}; Mean is {np.mean([b.close for b in Bars.get_last(self.session, WINDOW_SIZE)])}")
-                Quotes.delete_old_entries(self.session)
+            self.save(message, Bars)
+            mean = np.mean([b.close for b in Bars.get_last(self.session, WINDOW_SIZE)])
+            logger.info(
+                f"Received bar: {message['symbol']}: {message['close']} (mean: {mean})")
+            Quotes.delete_old_entries(self.session)
+            self.apply_strategy(message)
+
         elif message["type"] == "quote":
-            message.pop('type')
-            if message["exchange"] in ALLOWED_CRYPTO_EXCHANGES:
-                self.session = Quotes.get_or_create(self.session, **message)
-                self.session.commit()
-                self.apply_strategy(message)
+            self.save(message, Quotes)
+            self.apply_strategy(message)
 
         else:
             logger.debug(f"Message type {message['type']} not supported.")
@@ -189,6 +193,6 @@ class OrderDispatcher:
     def listen(self):
         while True:
             message = self.queue.get()
-            logger.debug(f"Received message {message}")
+            logger.debug(f"Received message {message} [Queue size: {self.queue.qsize()}]")
             self.process_message(message)
             self.queue.task_done()

@@ -14,9 +14,8 @@ def moving_average_crypto(api: REST, bar: dict) -> Union[dict, None]:
     """
     Moving average strategy.
     Args:
-        position: The actual position. At the moment shorting CRYPTO is not supported.
+        api: The api object.
         bar: The bar quote received.
-        mean: The moving average.
 
     Returns:
 

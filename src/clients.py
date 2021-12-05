@@ -150,7 +150,6 @@ class SubscriberClient:
 
     def process_message(self, message: dict):
         if message["type"] == "bar":
-            logger.info(f"Processing bar: {message}")
             self.apply_strategy(message)
         else:
             logger.debug(f"Message type {message['type']} not supported.")

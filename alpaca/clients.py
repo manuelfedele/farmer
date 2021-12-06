@@ -1,3 +1,6 @@
+import datetime
+
+import pytz
 import requests
 
 from alpaca.entities import Account
@@ -12,6 +15,7 @@ class Client:
             secret_key: str = APCA_API_SECRET_KEY
     ):
         self.base_url = base_url
+        self.data_url = "https://data.alpaca.markets/"
         self.stream_url = f"{self.base_url.replace('http', 'ws')}/stream/"
 
         self._key_id = key_id
@@ -24,6 +28,25 @@ class Client:
             "APCA-API-SECRET-KEY": self._secret_key
         })
         self.account = Account(**self.get_account())
+
+        self.tz = pytz.timezone('America/New_York')
+
+    @property
+    def end(self):
+        return datetime.datetime.utcnow().astimezone(self.tz)
+
+    @property
+    def start(self):
+        return self.end - datetime.timedelta(hours=1)
+
+    def _get_data_by_type(self, _type: str, symbol: str, params: dict):
+        return self.session.get(
+            url=f"{self.data_url}/v2/stocks/{symbol}/{_type}",
+            params=params
+        ).json()
+
+    def _get_last_data_by_type(self, _type: str, symbol: str):
+        return self.session.get(url=f"{self.data_url}/v2/stocks/{symbol}/{_type}/latest").json()
 
     def get_account(self):
         return self.session.get(url=f"{self.base_url}/v2/account").json()
@@ -42,3 +65,69 @@ class Client:
             return self.session.get(url=f"{self.base_url}/v2/positions").json()
         else:
             return self.session.get(url=f"{self.base_url}/v2/positions/{symbol}").json()
+
+    def get_bars(self, symbol: str, timeframe: str = "1Min", start: str = None, end: str = None, limit: int = 1000,
+                 adjustment: str = "raw",
+                 page_token: str = None):
+        tz = pytz.timezone("America/New_York")
+        if not end:
+            end = datetime.datetime.utcnow().astimezone(tz)
+        if not start:
+            start = end - datetime.timedelta(hours=1)
+
+        params = {
+            "timeframe": timeframe,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "limit": limit,
+            "adjustment": adjustment,
+            "page_token": page_token
+        }
+        print(params)
+        return self._get_data_by_type("bars", symbol, params).get("bars", [])
+
+    def get_trades(self, symbol: str, start: str = None, end: str = None, limit: int = 1000, page_token: str = None):
+        if not end:
+            end = self.end
+        if not start:
+            start = self.start
+
+        params = {
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "limit": limit,
+            "page_token": page_token
+        }
+        return self._get_data_by_type("trades", symbol, params).get("trades", [])
+
+    def get_quotes(self, symbol: str, start: str = None, end: str = None, limit: int = 1000, page_token: str = None):
+        if not end:
+            end = self.end
+        if not start:
+            start = self.start
+
+        params = {
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "limit": limit,
+            "page_token": page_token
+        }
+        print(params)
+        return self._get_data_by_type("quotes", symbol, params).get("quotes", [])
+
+    def get_last_bar(self, symbol: str):
+        return self._get_last_data_by_type("bars", symbol)
+
+    def get_last_trade(self, symbol: str):
+        return self._get_last_data_by_type("trades", symbol)
+
+    def get_last_quote(self, symbol: str):
+        return self._get_last_data_by_type("quotes", symbol)
+
+    def get_snapshot(self, symbol: str):
+        return self._get_data_by_type("snapshot", symbol, {})
+
+
+if __name__ == '__main__':
+    c = Client(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
+    print(c.get_quotes("AAPL"))

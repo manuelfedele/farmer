@@ -29,10 +29,6 @@ def cross_moving_average_crypto(
 
     position = get_position(api)
 
-    target_position_size = get_target_position(api, float(bar["high"]))
-
-    logger.info(f"Target position size: {target_position_size}")
-
     historical_data = get_historical_data(api)
     short_ma = round(np.mean([b['close'] for b in historical_data[-SHORT_MA:]]), 2)
     long_ma = round(np.mean([b['close'] for b in historical_data[-LONG_MA:]]), 2)
@@ -40,6 +36,10 @@ def cross_moving_average_crypto(
     if not position:
         # We have to buy if condition is met
         if short_ma > long_ma:
+            target_position_size = get_target_position(api, float(bar["high"]))
+
+            logger.info(f"Target position size: {target_position_size}")
+
             logger.info(f"Last price is higher than the moving average sma:{short_ma} > lma:{long_ma}")
             return {"side": "buy", "qty": target_position_size}
         else:

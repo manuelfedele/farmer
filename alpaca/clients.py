@@ -3,7 +3,7 @@ import datetime
 import pytz
 import requests
 
-from alpaca.entities import Account
+from alpaca.entities import Account, Bar, Trade, Quote
 from src.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL
 
 
@@ -30,6 +30,12 @@ class Client:
         self.account = Account(**self.get_account())
 
         self.tz = pytz.timezone('America/New_York')
+
+        self.casters = {
+            "bar": Bar,
+            "trade": Trade,
+            "quote": Quote
+        }
 
     @property
     def end(self):
@@ -116,13 +122,18 @@ class Client:
         return self._get_data_by_type("quotes", symbol, params).get("quotes", [])
 
     def get_last_bar(self, symbol: str):
-        return self._get_last_data_by_type("bars", symbol)
+        response = self._get_last_data_by_type("bars", symbol)
+        return self.casters["bar"](symbol=response["symbol"], **response["bar"])
 
     def get_last_trade(self, symbol: str):
-        return self._get_last_data_by_type("trades", symbol)
+        response = self._get_last_data_by_type("trades", symbol)
+        return self.casters["trade"](symbol=response["symbol"], **response["trade"])
 
     def get_last_quote(self, symbol: str):
-        return self._get_last_data_by_type("quotes", symbol)
+        response = self._get_last_data_by_type("quotes", symbol)
+        response["quote"]["as_"] = response["quote"]["as"]
+        response["quote"].pop("as")
+        return self.casters["quote"](symbol=response["symbol"], **response["quote"])
 
     def get_snapshot(self, symbol: str):
         return self._get_data_by_type("snapshot", symbol, {})
@@ -130,4 +141,4 @@ class Client:
 
 if __name__ == '__main__':
     c = Client(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
-    print(c.get_quotes("AAPL"))
+    print(c.get_last_quote("AAPL"))

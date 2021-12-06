@@ -1,4 +1,13 @@
+import json
 from dataclasses import dataclass
+
+
+class BaseEntity:
+    def __repr__(self):
+        return json.dumps(self.__dict__)
+
+    def __str__(self):
+        return json.dumps(self.__dict__)
 
 
 @dataclass
@@ -89,3 +98,88 @@ class Position:
     current_price: float
     lastday_price: float
     change_today: float
+
+
+class Bar(BaseEntity):
+    """
+    Bar class for storing OHLCV data.
+
+    Attributes:
+        symbol (str): Symbol of the asset.
+        open (float): Open price.
+        high (float): High price.
+        low (float): Low price.
+        close (float): Close price.
+        volume (float): Volume.
+        num_trades (int): Number of trades.
+        vwap (float): Volume Weighted Average Price.
+
+    """
+
+    def __init__(self, symbol: str, t: str, o: float, h: float, l: float, c: float, v: int, n: int, vw: float):
+        self.symbol = symbol
+        self.timestamp = t
+        self.open = o
+        self.high = h
+        self.low = l
+        self.close = c
+        self.volume = v
+        self.num_trades = n
+        self.vwap = vw
+
+
+class Trade(BaseEntity):
+    """
+    Trade class for storing trade data.
+
+    Attributes:
+        symbol (str): Symbol of the asset.
+        timestamp (str): Timestamp in RFC-3339 format with nanosecond precision.
+        exchange (str): Exchange where the trade happened.
+        price (float): Price of the trade.
+        size (int): Size of the trade.
+        conditions (list): Conditions of the trade.
+        id (str): Trade ID.
+        tape (str): Trade tape.
+
+    """
+
+    def __init__(self, symbol: str, t: str, x: str, p: float, s: int, c: list, i: int, z: str):
+        self.symbol = symbol
+        self.timestamp = t
+        self.exchange = x
+        self.price = p
+        self.size = s
+        self.conditions = c
+        self.id = i
+        self.tape = z
+
+
+class Quote(BaseEntity):
+    """
+    Quote class for storing quote data.
+
+    Attributes:
+        symbol (str): Symbol of the asset.
+        timestamp (str): Timestamp in RFC-3339 format with nanosecond precision.
+        ask_exchange (str): Exchange where the ask happened.
+        ask_price (float): Ask price.
+        ask_size (int): Ask size.
+        bid_exchange (str): Exchange where the bid happened.
+        bid_price (float): Bid price.
+        bid_size (int): Bid size.
+        conditions (list): Conditions of the quote.
+
+    """
+
+    def __init__(self, symbol: str, t: str, ax: str, ap: float, as_: int, bx: str, bp: float, bs: int, c: list, z: str):
+        self.symbol = symbol
+        self.timestamp = t
+        self.ask_exchange = ax
+        self.ask_price = ap
+        self.ask_size = as_
+        self.bid_exchange = bx
+        self.bid_price = bp
+        self.bid_size = bs
+        self.conditions = c
+        self.tape = z

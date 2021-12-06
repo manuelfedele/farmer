@@ -2,12 +2,10 @@ import datetime
 import logging
 
 import msgpack
-import pandas as pd
-import pytz
 from alpaca_trade_api import REST, TimeFrame, TimeFrameUnit
 
 from src.mappings import mappings
-from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES, WINDOW_SIZE, QUANTITY
+from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES, QUANTITY
 
 logger = logging.getLogger("farmer")
 
@@ -53,11 +51,7 @@ def get_historical_data(
         api: REST,
         symbol: str = SYMBOL,
         timeframe=TimeFrame(1, TimeFrameUnit.Minute),
-        start=None,
-        end=None,
         exchanges: list = ALLOWED_CRYPTO_EXCHANGES,
-        limit: int = WINDOW_SIZE,
-        tz: str = "America/New_York"
 ) -> list:
     """
     Retrieves historical data from the API
@@ -65,34 +59,21 @@ def get_historical_data(
         api: The API to use
         symbol: The symbol to retrieve data for
         timeframe: The timeframe to retrieve data for
-        start: The start date to retrieve data for
-        end: The end date to retrieve data for
         exchanges: The exchanges to retrieve data for
-        limit: The limit of data to retrieve
-        tz: The timezone to retrieve data for
 
     Returns:
         The retrieved data
 
     """
 
-    if not end:
-        end = datetime.datetime.now(tz=pytz.timezone(tz))
-    if not start:
-        start = end - datetime.timedelta(hours=1)
-
-    end = pd.Timestamp(end.strftime("%Y-%m-%dT%H:%M"), tz=tz).isoformat()
-    start = pd.Timestamp(start.strftime("%Y-%m-%dT%H:%M"), tz=tz).isoformat()
-
     bars = api.get_crypto_bars_iter(
         symbol=symbol,
         timeframe=timeframe,
-        start=start,
-        end=end,
         exchanges=exchanges,
-        limit=limit
     )
-    return [map_entity(symbol, bar, "bar") for bar in bars]
+    bars = [map_entity(symbol, bar, "bar") for bar in bars]
+
+    return bars
 
 
 def place_order(
@@ -101,8 +82,7 @@ def place_order(
         side: str = "buy",
         type: str = "market",
         qty: int = QUANTITY,
-        time_in_force: str = "day",
-        **kwargs
+        time_in_force: str = "day"
 ) -> int:
     """
     Places an order on the API
@@ -149,3 +129,13 @@ def get_position(
     except Exception as e:
         logger.debug(e)
         return None
+
+
+def get_target_position(
+        api: REST,
+        last_price: float,
+):
+    cash = float(api.get_account()["cash"])
+
+    target_position_size = cash / last_price * 0.8
+    return round(target_position_size, 2)

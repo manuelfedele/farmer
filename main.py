@@ -4,9 +4,7 @@ from alpaca_trade_api import Stream, REST
 
 from src.clients import PublisherClient, SubscriberClient
 from src.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL, DATA_FEED
-from src.strategies import moving_average_crypto
-
-# We inject the API key and secret into the environment variables because alpaca_trade_api library will look for them
+from src.strategies import cross_moving_average_crypto
 
 os.environ.setdefault('APCA_API_KEY_ID', APCA_API_KEY_ID)
 os.environ.setdefault('APCA_API_SECRET_KEY', APCA_API_SECRET_KEY)
@@ -18,7 +16,7 @@ if __name__ == '__main__':
     api = REST(raw_data=True)
 
     publisher = PublisherClient(api=api, stream=stream)
-    subscriber = SubscriberClient(api=api, strategy=moving_average_crypto)
+    subscriber = SubscriberClient(api=api, strategy=cross_moving_average_crypto)
 
     subscriber.start()
     publisher.start()

@@ -14,17 +14,17 @@ logger = logging.getLogger("farmer")
 
 class PublisherClient:
     """
-    PublisherClient is a class that subscribes to the Alpaca REST API and then pushes messages to the queue so that
+    PublisherClient is a class that subscribes to the Alpaca stream API and then pushes messages to the queue so that
     the Dispatcher can process them sequentially.
     """
 
     def __init__(
-            self,
-            stream: Stream,
-            symbol: str = SYMBOL,
-            bar_size: str = BAR_SIZE,
-            crypto_symbols: list = CRYPTO_SYMBOLS,
-            queue: Queue = q,
+        self,
+        stream: Stream,
+        symbol: str = SYMBOL,
+        bar_size: str = BAR_SIZE,
+        crypto_symbols: list = CRYPTO_SYMBOLS,
+        queue: Queue = q,
     ):
         self.stream = stream
         self.symbol = symbol
@@ -128,11 +128,11 @@ class SubscriberClient:
     """
 
     def __init__(
-            self,
-            api: AlpacaAPI,
-            strategy: Callable,
-            symbol: str = SYMBOL,
-            queue: Queue = q,
+        self,
+        api: AlpacaAPI,
+        strategy: Callable,
+        symbol: str = SYMBOL,
+        queue: Queue = q,
     ):
         self.api = api
         self.strategy = strategy

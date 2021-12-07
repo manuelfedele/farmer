@@ -1,58 +1,22 @@
-import datetime
 import logging
+from typing import Union
 
-import msgpack
-from alpaca_trade_api import REST, TimeFrame, TimeFrameUnit
+import pandas as pd
 
-from src.mappings import mappings
-from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES, QUANTITY
+from alpaca.clients import AlpacaAPI
+from alpaca.entities import Order, Bar, Position
+from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
 
 
-def map_entity(
-        symbol: str,
-        data: dict,
-        type: str
-) -> dict:
-    """
-    Maps the received entity to the corresponding mapping
-    Args:
-        symbol: the symbol of the entity
-        data: The entity to be mapped
-        type: The type of entity
-
-    Returns:
-        The mapped entity
-
-    """
-    data['S'] = symbol
-    mapping = mappings[type]
-    _mapped_dict = {}
-    for key, value in data.items():
-        try:
-            _key = mapping[key]
-
-            if isinstance(value, msgpack.ext.Timestamp):
-                value = value.to_datetime()
-
-            elif isinstance(value, str) and 'time' in _key.lower():
-                try:
-                    value = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-                except ValueError:
-                    pass
-            _mapped_dict[mapping[key]] = value
-        except KeyError:
-            logger.debug(f"Key {key} not found in mapping.")
-    return _mapped_dict
-
-
 def get_historical_data(
-        api: REST,
+        api: AlpacaAPI,
         symbol: str = SYMBOL,
-        timeframe=TimeFrame(1, TimeFrameUnit.Minute),
+        timeframe="1Min",
         exchanges: list = ALLOWED_CRYPTO_EXCHANGES,
-) -> list:
+        df: bool = False
+) -> Union[list[Bar], pd.DataFrame]:
     """
     Retrieves historical data from the API
     Args:
@@ -60,27 +24,29 @@ def get_historical_data(
         symbol: The symbol to retrieve data for
         timeframe: The timeframe to retrieve data for
         exchanges: The exchanges to retrieve data for
+        df: Whether to return a pandas dataframe
 
     Returns:
         The retrieved data
 
     """
 
-    bars = api.get_crypto_bars_iter(
+    bars = api.get_crypto_bars(
         symbol=symbol,
         timeframe=timeframe,
         exchanges=exchanges,
     )
-    bars = [map_entity(symbol, bar, "bar") for bar in bars]
-
-    return bars
+    if not df:
+        return bars
+    else:
+        return Bar.to_df(bars)
 
 
 def place_order(
-        api: REST,
+        api: AlpacaAPI,
         symbol: str = SYMBOL,
         **kwargs
-) -> int:
+) -> Union[Order, None]:
     """
     Places an order on the API
     Args:
@@ -93,7 +59,7 @@ def place_order(
     """
     try:
         logger.info(f"Placing {kwargs.get('type')} order {kwargs.get('side')} {kwargs.get('qty')} on {symbol}")
-        return api.submit_order(
+        return api.place_order(
             symbol=symbol,
             **kwargs
         )
@@ -101,25 +67,10 @@ def place_order(
         logger.error(f"Error while placing order: {e}")
 
 
-def replace_order(
-        api: REST,
-        order_id: str,
-        **kwargs
-):
-    try:
-        logger.info(f"Replacing order {order_id} with {kwargs.get('qty')}")
-        return api.replace_order(
-            order_id=order_id,
-            **kwargs
-        )
-    except Exception as e:
-        logger.error(f"Error while replacing order: {e}")
-
-
 def get_position(
-        api: REST,
+        api: AlpacaAPI,
         symbol: str = SYMBOL
-) -> dict:
+) -> Union[Position, None]:
     """
     Retrieves the current position of the symbol
     Args:
@@ -130,25 +81,25 @@ def get_position(
         The retrieved position
     """
     try:
-        return api.get_position(symbol)
+        return api.get_positions(symbol)
     except Exception as e:
         logger.debug(e)
         return None
 
 
-def get_order(api: REST):
+def get_order(api: AlpacaAPI) -> Union[Order, None]:
     try:
-        return api.list_orders()[0]
+        return api.get_orders()[0]
     except Exception as e:
         logger.debug(e)
         return None
 
 
 def get_target_position(
-        api: REST,
+        api: AlpacaAPI,
         last_price: float,
-):
-    cash = float(api.get_account()["cash"])
+) -> float:
+    cash = float(api.account.cash)
 
     target_position_size = cash / last_price * 0.8
     return round(target_position_size, 2)

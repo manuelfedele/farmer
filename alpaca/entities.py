@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 import datetime
 import json
 from dataclasses import dataclass
+
+import msgpack
+import pandas as pd
 
 
 class BaseEntity:
@@ -8,25 +13,37 @@ class BaseEntity:
     def __init__(self):
         self.cast_attributes()
 
+    def __str__(self):
+        return json.dumps(self.__dict__, indent=4, sort_keys=True, default=str)
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def datetime_formats(self):
         return '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S.%f%z'
 
     def cast_attributes(self):
         for key, value in self.__dict__.items():
-            if 'time' in key or 'at' in key:
+            if isinstance(value, str) and ('time' in key or 'at' in key):
                 for _format in self.datetime_formats:
                     try:
                         self.__dict__[key] = datetime.datetime.strptime(value, _format)
                         break
                     except ValueError:
                         pass
+            if isinstance(value, pd.Timestamp):
+                print("here")
+                self.__dict__[key] = value.to_pydatetime()
+            if isinstance(value, msgpack.ext.Timestamp):
+                self.__dict__[key] = value.to_datetime()
 
-    def __str__(self):
-        return json.dumps(self.__dict__, indent=4, sort_keys=True, default=str)
+    def to_dict(self):
+        return self.__dict__
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def to_df(cls, data: list[Bar, Trade, Quote]):
+        return pd.DataFrame([entry.to_dict() for entry in data])
 
 
 @dataclass
@@ -117,6 +134,7 @@ class Position:
     current_price: float
     lastday_price: float
     change_today: float
+    asset_marginable: bool = False
 
 
 class Bar(BaseEntity):
@@ -136,7 +154,8 @@ class Bar(BaseEntity):
 
     """
 
-    def __init__(self, symbol: str, t: str, o: float, h: float, l: float, c: float, v: int, n: int, vw: float):
+    def __init__(self, symbol: str, t: str, o: float, h: float, l: float, c: float, v: int, n: int, vw: float,
+                 x: str = ''):
         self.type = 'bar'
         self.symbol = symbol
         self.timestamp = t
@@ -147,6 +166,7 @@ class Bar(BaseEntity):
         self.volume = v
         self.num_trades = n
         self.vwap = vw
+        self.exchange = x
 
         super().__init__()
 
@@ -177,6 +197,7 @@ class Trade(BaseEntity):
         self.conditions = c
         self.id = i
         self.tape = z
+        self.exchange = x
 
         super().__init__()
 
@@ -195,10 +216,16 @@ class Quote(BaseEntity):
         bid_price (float): Bid price.
         bid_size (int): Bid size.
         conditions (list): Conditions of the quote.
+        exchange (str): Exchange where the quote happened.
 
     """
 
-    def __init__(self, symbol: str, t: str, ax: str, ap: float, as_: int, bx: str, bp: float, bs: int, c: list, z: str):
+    def __init__(self, symbol: str, t: str, ap: float, as_: int, bp: float, bs: int,
+                 z: str = '',
+                 bx: str = '',
+                 ax: str = '',
+                 x: str = '',
+                 c: list = None):
         self.type = 'quote'
         self.symbol = symbol
         self.timestamp = t
@@ -210,5 +237,6 @@ class Quote(BaseEntity):
         self.bid_size = bs
         self.conditions = c
         self.tape = z
+        self.exchange = x
 
         super().__init__()

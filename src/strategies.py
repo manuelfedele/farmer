@@ -1,9 +1,8 @@
 import logging
 from typing import Union
 
-import numpy as np
-from alpaca_trade_api import REST
-
+from alpaca.clients import AlpacaAPI
+from alpaca.entities import Bar
 from src.helpers import get_historical_data, get_position, get_target_position
 from src.settings import ALLOWED_CRYPTO_EXCHANGES, SHORT_MA, LONG_MA
 
@@ -11,8 +10,8 @@ logger = logging.getLogger("farmer")
 
 
 def cross_moving_average_crypto(
-        api: REST,
-        bar: dict,
+        api: AlpacaAPI,
+        bar: Bar,
         allowed_crypto_exchanges: list = ALLOWED_CRYPTO_EXCHANGES
 ) -> Union[dict, None]:
     """
@@ -24,27 +23,27 @@ def cross_moving_average_crypto(
     Returns:
 
     """
-    if bar["exchange"] not in allowed_crypto_exchanges:
+    if bar.exchange not in allowed_crypto_exchanges:
         return
 
     position = get_position(api)
-    target_position_size = get_target_position(api, float(bar["high"]))
+    target_position_size = get_target_position(api, float(bar.high))
 
-    historical_data = get_historical_data(api)
-    short_ma = round(np.mean([b['close'] for b in historical_data[-SHORT_MA:]]), 2)
-    long_ma = round(np.mean([b['close'] for b in historical_data[-LONG_MA:]]), 2)
+    historical_data_df = get_historical_data(api, df=True)
+    short_sma = historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1]
+    long_sma = historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1]
 
     if not position:
         # We have to buy if condition is met
-        if short_ma > long_ma:
-            logger.info(f"sma:{short_ma} > lma:{long_ma}")
+        if short_sma > long_sma:
+            logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}")
             return {"type": "market", "side": "buy", "qty": target_position_size}
         else:
-            logger.info(f"sma:{short_ma} < lma:{long_ma}. Doing Nothing")
+            logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}. Doing Nothing")
     else:
         # We have to sell if condition is met
-        if short_ma <= long_ma:
-            logger.info(f"sma:{short_ma} < lma:{long_ma}")
-            return {"type": "trailing_stop", "side": "sell", "qty": position["qty"]}
+        if short_sma <= long_sma:
+            logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}")
+            return {"type": "trailing_stop", "side": "sell", "qty": position.qty}
         else:
-            logger.info(f"sma:{short_ma} > lma:{long_ma}. Doing Nothing")
+            logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}. Doing Nothing")

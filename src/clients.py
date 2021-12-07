@@ -1,11 +1,13 @@
 import logging
 import threading
 from queue import Queue
-from typing import Callable
+from typing import Callable, Union
 
-from alpaca_trade_api import Stream, REST
+from alpaca_trade_api import Stream
 
-from src.helpers import map_entity, place_order
+from alpaca.clients import AlpacaAPI
+from alpaca.entities import Bar, Quote
+from src.helpers import place_order
 from src.settings import BAR_SIZE, CRYPTO_SYMBOLS, q, SYMBOL
 
 logger = logging.getLogger("farmer")
@@ -20,14 +22,12 @@ class PublisherClient:
     def __init__(
             self,
             stream: Stream,
-            api: REST,
             symbol: str = SYMBOL,
             bar_size: str = BAR_SIZE,
             crypto_symbols: list = CRYPTO_SYMBOLS,
             queue: Queue = q,
     ):
         self.stream = stream
-        self.api = api
         self.symbol = symbol
         self.bar_size = bar_size
         self.crypto_symbols = crypto_symbols
@@ -79,6 +79,14 @@ class PublisherClient:
         """
         logger.info(f"Stopping {self.__class__.__name__}")
 
+    @staticmethod
+    def clean_message(message):
+        message.pop('T')
+        message['symbol'] = message.pop('S')
+        if 'as' in message.keys():
+            message['as_'] = message.pop('as')
+        return message
+
     async def bar_callback(self, bar: dict) -> None:
         """
         Callback for the stream.subscribe_bars method, called when a new bar is received
@@ -89,9 +97,10 @@ class PublisherClient:
             None
         """
 
-        bar = map_entity(self.symbol, bar, "bar")
         logger.debug(f"Received bar: {bar}")
-        self.queue.put({**bar, "type": "bar"})
+        bar = self.clean_message(bar)
+
+        self.queue.put(Bar(**bar))
 
     async def quote_callback(self, quote: dict) -> None:
         """
@@ -103,9 +112,10 @@ class PublisherClient:
             None
 
         """
-        quote = map_entity(self.symbol, quote, "quote")
         logger.debug(f"Received quote: {quote}")
-        self.queue.put({**quote, "type": "quote"})
+        quote = self.clean_message(quote)
+
+        # self.queue.put(Quote(**quote))
 
     async def trade_callback(self, trade: dict):
         """
@@ -128,7 +138,7 @@ class SubscriberClient:
 
     def __init__(
             self,
-            api: REST,
+            api: AlpacaAPI,
             strategy: Callable,
             symbol: str = SYMBOL,
             queue: Queue = q,
@@ -148,15 +158,15 @@ class SubscriberClient:
         if signal:
             place_order(self.api, symbol=self.symbol, **signal)
 
-    def process_message(self, message: dict):
-        if message["type"] == "bar":
-            self.apply_strategy(message)
+    def process_entity(self, entity: Union[Bar, Quote]):
+        if isinstance(entity, Bar):
+            self.apply_strategy(entity)
         else:
-            logger.debug(f"Message type {message['type']} not supported.")
+            logger.debug(f"Message type {type(entity)} not supported.")
 
     def listen(self):
         while True:
             message = self.queue.get()
             logger.debug(f"Received message {message} [Queue size: {self.queue.qsize()}]")
-            self.process_message(message)
+            self.process_entity(message)
             self.queue.task_done()

@@ -9,7 +9,6 @@ import pandas as pd
 
 
 class BaseEntity:
-
     def __init__(self):
         self.cast_attributes()
 
@@ -21,11 +20,11 @@ class BaseEntity:
 
     @property
     def datetime_formats(self):
-        return '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S.%f%z'
+        return "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z"
 
     def cast_attributes(self):
         for key, value in self.__dict__.items():
-            if isinstance(value, str) and ('time' in key or 'at' in key):
+            if isinstance(value, str) and ("time" in key or "at" in key):
                 for _format in self.datetime_formats:
                     try:
                         self.__dict__[key] = datetime.datetime.strptime(value, _format)
@@ -33,7 +32,6 @@ class BaseEntity:
                     except ValueError:
                         pass
             if isinstance(value, pd.Timestamp):
-                print("here")
                 self.__dict__[key] = value.to_pydatetime()
             if isinstance(value, msgpack.ext.Timestamp):
                 self.__dict__[key] = value.to_datetime()
@@ -154,9 +152,20 @@ class Bar(BaseEntity):
 
     """
 
-    def __init__(self, symbol: str, t: str, o: float, h: float, l: float, c: float, v: int, n: int, vw: float,
-                 x: str = ''):
-        self.type = 'bar'
+    def __init__(
+        self,
+        symbol: str,
+        t: str,
+        o: float,
+        h: float,
+        l: float,
+        c: float,
+        v: int,
+        n: int,
+        vw: float,
+        x: str = "",
+    ):
+        self.type = "bar"
         self.symbol = symbol
         self.timestamp = t
         self.open = o
@@ -187,8 +196,10 @@ class Trade(BaseEntity):
 
     """
 
-    def __init__(self, symbol: str, t: str, x: str, p: float, s: int, c: list, i: int, z: str):
-        self.type = 'trade'
+    def __init__(
+        self, symbol: str, t: str, x: str, p: float, s: int, c: list, i: int, z: str
+    ):
+        self.type = "trade"
         self.symbol = symbol
         self.timestamp = t
         self.exchange = x
@@ -220,13 +231,21 @@ class Quote(BaseEntity):
 
     """
 
-    def __init__(self, symbol: str, t: str, ap: float, as_: int, bp: float, bs: int,
-                 z: str = '',
-                 bx: str = '',
-                 ax: str = '',
-                 x: str = '',
-                 c: list = None):
-        self.type = 'quote'
+    def __init__(
+        self,
+        symbol: str,
+        t: str,
+        ap: float,
+        as_: int,
+        bp: float,
+        bs: int,
+        z: str = "",
+        bx: str = "",
+        ax: str = "",
+        x: str = "",
+        c: list = None,
+    ):
+        self.type = "quote"
         self.symbol = symbol
         self.timestamp = t
         self.ask_exchange = ax

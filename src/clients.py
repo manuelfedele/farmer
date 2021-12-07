@@ -20,12 +20,12 @@ class PublisherClient:
     """
 
     def __init__(
-            self,
-            stream: Stream,
-            symbol: str = SYMBOL,
-            bar_size: str = BAR_SIZE,
-            crypto_symbols: list = CRYPTO_SYMBOLS,
-            queue: Queue = q,
+        self,
+        stream: Stream,
+        symbol: str = SYMBOL,
+        bar_size: str = BAR_SIZE,
+        crypto_symbols: list = CRYPTO_SYMBOLS,
+        queue: Queue = q,
     ):
         self.stream = stream
         self.symbol = symbol
@@ -43,30 +43,22 @@ class PublisherClient:
         """
         logger.info(f"Starting {self.__class__.__name__}")
         if self.symbol in self.crypto_symbols:
-            self.stream.subscribe_crypto_trades(
-                self.trade_callback, self.symbol
-            )
+            self.stream.subscribe_crypto_trades(self.trade_callback, self.symbol)
             self.stream.subscribe_crypto_bars(
                 self.bar_callback,
                 self.symbol,
                 self.bar_size,
             )
-            self.stream.subscribe_crypto_quotes(
-                self.quote_callback, self.symbol
-            )
+            self.stream.subscribe_crypto_quotes(self.quote_callback, self.symbol)
         else:
-            self.stream.subscribe_trades(
-                self.trade_callback, self.symbol
-            )
+            self.stream.subscribe_trades(self.trade_callback, self.symbol)
 
             self.stream.subscribe_bars(
                 self.bar_callback,
                 self.symbol,
                 self.bar_size,
             )
-            self.stream.subscribe_quotes(
-                self.quote_callback, self.symbol
-            )
+            self.stream.subscribe_quotes(self.quote_callback, self.symbol)
 
         self.stream.run()  # stream.run() is blocking, so stop will be executed after stream.run() returns
         self.stop()
@@ -81,10 +73,10 @@ class PublisherClient:
 
     @staticmethod
     def clean_message(message):
-        message.pop('T')
-        message['symbol'] = message.pop('S')
-        if 'as' in message.keys():
-            message['as_'] = message.pop('as')
+        message.pop("T")
+        message["symbol"] = message.pop("S")
+        if "as" in message.keys():
+            message["as_"] = message.pop("as")
         return message
 
     async def bar_callback(self, bar: dict) -> None:
@@ -137,11 +129,11 @@ class SubscriberClient:
     """
 
     def __init__(
-            self,
-            api: AlpacaAPI,
-            strategy: Callable,
-            symbol: str = SYMBOL,
-            queue: Queue = q,
+        self,
+        api: AlpacaAPI,
+        strategy: Callable,
+        symbol: str = SYMBOL,
+        queue: Queue = q,
     ):
         self.api = api
         self.strategy = strategy
@@ -151,7 +143,7 @@ class SubscriberClient:
 
     def start(self):
         logger.info(f"Starting {self.__class__.__name__}")
-        threading.Thread(name='Dispatcher', target=self.listen, daemon=True).start()
+        threading.Thread(name="Dispatcher", target=self.listen, daemon=True).start()
 
     def apply_strategy(self, message):
         signal = self.strategy(api=self.api, bar=message)
@@ -167,6 +159,8 @@ class SubscriberClient:
     def listen(self):
         while True:
             message = self.queue.get()
-            logger.debug(f"Received message {message} [Queue size: {self.queue.qsize()}]")
+            logger.debug(
+                f"Received message {message} [Queue size: {self.queue.qsize()}]"
+            )
             self.process_entity(message)
             self.queue.task_done()

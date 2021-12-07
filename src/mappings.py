@@ -7,7 +7,7 @@ trade_mapping = {
     "s": "size",
     "t": "timestamp",
     "z": "tape",  # stocks only
-    "tks": "takerside"  # crypto only
+    "tks": "takerside",  # crypto only
 }
 
 quote_mapping = {
@@ -21,7 +21,7 @@ quote_mapping = {
     "bs": "bid_size",
     "c": "conditions",  # stocks only
     "t": "timestamp",
-    "z": "tape"  # stocks only
+    "z": "tape",  # stocks only
 }
 
 bar_mapping = {
@@ -34,7 +34,7 @@ bar_mapping = {
     "v": "volume",
     "t": "timestamp",
     "n": "trade_count",
-    "vw": "vwap"
+    "vw": "vwap",
 }
 
 status_mapping = {
@@ -44,7 +44,7 @@ status_mapping = {
     "rc": "reason_code",
     "rm": "reason_message",
     "t": "timestamp",
-    "z": "tape"
+    "z": "tape",
 }
 
 luld_mapping = {
@@ -53,11 +53,7 @@ luld_mapping = {
     "d": "limit_down_price",
     "i": "indicator",
     "t": "timestamp",
-    "z": "tape"
+    "z": "tape",
 }
 
-mappings = {
-    "bar": bar_mapping,
-    "quote": quote_mapping,
-    "trade": trade_mapping
-}
+mappings = {"bar": bar_mapping, "quote": quote_mapping, "trade": trade_mapping}

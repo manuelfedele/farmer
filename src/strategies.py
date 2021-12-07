@@ -10,9 +10,7 @@ logger = logging.getLogger("farmer")
 
 
 def cross_moving_average_crypto(
-        api: AlpacaAPI,
-        bar: Bar,
-        allowed_crypto_exchanges: list = ALLOWED_CRYPTO_EXCHANGES
+    api: AlpacaAPI, bar: Bar, allowed_crypto_exchanges: list = ALLOWED_CRYPTO_EXCHANGES
 ) -> Union[dict, None]:
     """
     Moving average strategy.
@@ -29,11 +27,13 @@ def cross_moving_average_crypto(
     position = get_position(api)
     target_position_size = get_target_position(api, float(bar.high))
 
-    # Setting exchanges to None to fetch quotes from all exchanges. This is the only way to have a moving average
-    # consistent with TradingView (where the strategy has been tested).
-    historical_data_df = get_historical_data(api, exchanges=None, df=True)
-    short_sma = round(historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1], 2)
-    long_sma = round(historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1], 2)
+    historical_data_df = get_historical_data(api, df=True, crypto=True)
+    short_sma = round(
+        historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1], 2
+    )
+    long_sma = round(
+        historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1], 2
+    )
 
     if not position:
         # We have to buy if condition is met
@@ -46,8 +46,7 @@ def cross_moving_average_crypto(
         # We have to sell if condition is met
         if short_sma <= long_sma:
             logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}")
-            return {"type": "trailing_stop", "side": "sell", "qty": position.qty}
+            return {"type": "market", "side": "sell", "qty": position.qty}
         else:
             logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}")
             logger.info(f"Actual Position: {position}")
-

@@ -19,12 +19,12 @@ class PublisherClient:
     """
 
     def __init__(
-        self,
-        stream: Stream,
-        symbol: str = SYMBOL,
-        bar_size: str = BAR_SIZE,
-        crypto_symbols: list = CRYPTO_SYMBOLS,
-        queue: Queue = q,
+            self,
+            stream: Stream,
+            symbol: str = SYMBOL,
+            bar_size: str = BAR_SIZE,
+            crypto_symbols: list = CRYPTO_SYMBOLS,
+            queue: Queue = q,
     ):
         self.stream = stream
         self.symbol = symbol
@@ -128,11 +128,11 @@ class SubscriberClient:
     """
 
     def __init__(
-        self,
-        api: AlpacaAPI,
-        strategy: Callable,
-        symbol: str = SYMBOL,
-        queue: Queue = q,
+            self,
+            api: AlpacaAPI,
+            strategy: Callable,
+            symbol: str = SYMBOL,
+            queue: Queue = q,
     ):
         self.api = api
         self.strategy = strategy
@@ -145,9 +145,7 @@ class SubscriberClient:
         threading.Thread(name="Dispatcher", target=self.listen, daemon=True).start()
 
     def apply_strategy(self, message):
-        signal = self.strategy(api=self.api, bar=message)
-        if signal:
-            place_order(self.api, symbol=self.symbol, **signal)
+        self.strategy(api=self.api, bar=message)
 
     def process_entity(self, entity: Union[Bar, Quote]):
         if isinstance(entity, Bar):

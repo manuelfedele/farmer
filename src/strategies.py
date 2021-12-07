@@ -29,9 +29,13 @@ def cross_moving_average_crypto(
     position = get_position(api)
     target_position_size = get_target_position(api, float(bar.high))
 
-    historical_data_df = get_historical_data(api, df=True)
-    short_sma = historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1]
-    long_sma = historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1]
+    # Setting exchanges to None to fetch quotes from all exchanges. This is the only way to have a moving average
+    # consistent with TradingView (where the strategy has been tested).
+    historical_data_df = get_historical_data(api, exchanges=None, df=True)
+    short_sma = round(historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1], 2)
+    long_sma = round(historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1], 2)
+
+    logger.info(f"\n{historical_data_df.tail().to_string()}")
 
     if not position:
         # We have to buy if condition is met

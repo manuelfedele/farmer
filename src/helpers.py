@@ -1,3 +1,4 @@
+import datetime
 import logging
 from typing import Union
 
@@ -5,7 +6,7 @@ import pandas as pd
 
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Order, Bar, Position
-from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES
+from src.settings import SYMBOL, ALLOWED_CRYPTO_EXCHANGES, APCA_API_KEY_ID, APCA_API_SECRET_KEY
 
 logger = logging.getLogger("farmer")
 
@@ -103,3 +104,14 @@ def get_target_position(
 
     target_position_size = cash / last_price * 0.8
     return round(target_position_size, 2)
+
+
+if __name__ == '__main__':
+    if __name__ == '__main__':
+        c = AlpacaAPI(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
+        df = get_historical_data(c, SYMBOL, timeframe="1Min", exchanges=ALLOWED_CRYPTO_EXCHANGES, df=True)
+        df['sma15'] = df['close'].rolling(window=15).mean()
+        df['sma50'] = df['close'].rolling(window=60).mean()
+        df['sma200'] = df['close'].rolling(window=200).mean()
+        signal = (df['sma15'] > df['sma50']).iloc[-1]
+        print(signal)

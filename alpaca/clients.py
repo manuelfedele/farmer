@@ -47,7 +47,7 @@ class AlpacaAPI:
 
     @property
     def start(self):
-        return self.end - datetime.timedelta(hours=1)
+        return self.end - datetime.timedelta(hours=2)
 
     def _get_data_by_type(self, _type: str, symbol: str, params: dict, version: str = "v2", kind: str = "stocks"):
         response = self.session.get(url=f"{self.data_url}/{version}/{kind}/{symbol}/{_type}", params=params).json()
@@ -258,17 +258,3 @@ class AlpacaAPI:
 
         response = self.session.post(url=f"{self.base_url}/{version}/orders", json=params).json()
         return Order(**response)
-
-
-if __name__ == '__main__':
-    c = AlpacaAPI(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
-    # s = c.end - datetime.timedelta(hours=5)
-    # bars = c.get_crypto_bars("BTCUSD", "1Min", exchange='CBSE', start=s)
-    # df = Bar.to_df(bars)
-    # df["sma15"] = df["close"].rolling(window=15).mean()
-    # df["sma50"] = df["close"].rolling(window=50).mean()
-    # df["sma200"] = df["close"].rolling(window=150).mean()
-    # df["sma200"] = df["close"].rolling(window=200).mean()
-    # print(df.to_string())
-    # print(df['sma15'].iloc[-1])
-    print(c.get_positions())

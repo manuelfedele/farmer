@@ -1,13 +1,32 @@
+import datetime
 import json
 from dataclasses import dataclass
 
 
 class BaseEntity:
-    def __repr__(self):
-        return json.dumps(self.__dict__)
+
+    def __init__(self):
+        self.cast_attributes()
+
+    @property
+    def datetime_formats(self):
+        return '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S.%f%z'
+
+    def cast_attributes(self):
+        for key, value in self.__dict__.items():
+            if 'time' in key or 'at' in key:
+                for _format in self.datetime_formats:
+                    try:
+                        self.__dict__[key] = datetime.datetime.strptime(value, _format)
+                        break
+                    except ValueError:
+                        pass
 
     def __str__(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self.__dict__, indent=4, sort_keys=True, default=str)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 @dataclass
@@ -106,6 +125,7 @@ class Bar(BaseEntity):
 
     Attributes:
         symbol (str): Symbol of the asset.
+        timestamp (str): Timestamp of the bar.
         open (float): Open price.
         high (float): High price.
         low (float): Low price.
@@ -117,6 +137,7 @@ class Bar(BaseEntity):
     """
 
     def __init__(self, symbol: str, t: str, o: float, h: float, l: float, c: float, v: int, n: int, vw: float):
+        self.type = 'bar'
         self.symbol = symbol
         self.timestamp = t
         self.open = o
@@ -126,6 +147,8 @@ class Bar(BaseEntity):
         self.volume = v
         self.num_trades = n
         self.vwap = vw
+
+        super().__init__()
 
 
 class Trade(BaseEntity):
@@ -145,6 +168,7 @@ class Trade(BaseEntity):
     """
 
     def __init__(self, symbol: str, t: str, x: str, p: float, s: int, c: list, i: int, z: str):
+        self.type = 'trade'
         self.symbol = symbol
         self.timestamp = t
         self.exchange = x
@@ -153,6 +177,8 @@ class Trade(BaseEntity):
         self.conditions = c
         self.id = i
         self.tape = z
+
+        super().__init__()
 
 
 class Quote(BaseEntity):
@@ -173,6 +199,7 @@ class Quote(BaseEntity):
     """
 
     def __init__(self, symbol: str, t: str, ax: str, ap: float, as_: int, bx: str, bp: float, bs: int, c: list, z: str):
+        self.type = 'quote'
         self.symbol = symbol
         self.timestamp = t
         self.ask_exchange = ax
@@ -183,3 +210,5 @@ class Quote(BaseEntity):
         self.bid_size = bs
         self.conditions = c
         self.tape = z
+
+        super().__init__()

@@ -28,6 +28,7 @@ def cross_moving_average_crypto(
         return
 
     position = get_position(api)
+    target_position_size = get_target_position(api, float(bar["high"]))
 
     historical_data = get_historical_data(api)
     short_ma = round(np.mean([b['close'] for b in historical_data[-SHORT_MA:]]), 2)
@@ -36,22 +37,14 @@ def cross_moving_average_crypto(
     if not position:
         # We have to buy if condition is met
         if short_ma > long_ma:
-            target_position_size = get_target_position(api, float(bar["high"]))
-
-            logger.info(f"Target position size: {target_position_size}")
-
-            logger.info(f"Last price is higher than the moving average sma:{short_ma} > lma:{long_ma}")
-            return {"side": "buy", "qty": target_position_size}
+            logger.info(f"sma:{short_ma} > lma:{long_ma}")
+            return {"type": "market", "side": "buy", "qty": target_position_size}
         else:
-            logger.info(
-                f"Last price is lower than the moving average "
-                f"sma:{short_ma} < lma:{long_ma} and we have no positions. Doing Nothing")
+            logger.info(f"sma:{short_ma} < lma:{long_ma}. Doing Nothing")
     else:
         # We have to sell if condition is met
         if short_ma <= long_ma:
-            logger.info(f"Last price is lower than the moving average sma:{short_ma} < lma:{long_ma}")
-            return {"side": "sell", "qty": position["qty"]}
+            logger.info(f"sma:{short_ma} < lma:{long_ma}")
+            return {"type": "trailing_stop", "side": "sell", "qty": position["qty"]}
         else:
-            logger.info(
-                f"Last price is above the moving average "
-                f"sma:{short_ma} > lma:{long_ma} but a position already exists. Doing Nothing")
+            logger.info(f"sma:{short_ma} > lma:{long_ma}. Doing Nothing")

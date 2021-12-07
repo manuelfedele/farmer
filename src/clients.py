@@ -22,7 +22,7 @@ class PublisherClient:
             stream: Stream,
             api: REST,
             symbol: str = SYMBOL,
-            bar_size: int = BAR_SIZE,
+            bar_size: str = BAR_SIZE,
             crypto_symbols: list = CRYPTO_SYMBOLS,
             queue: Queue = q,
     ):
@@ -146,7 +146,7 @@ class SubscriberClient:
     def apply_strategy(self, message):
         signal = self.strategy(api=self.api, bar=message)
         if signal:
-            place_order(self.api, **signal)
+            place_order(self.api, symbol=self.symbol, **signal)
 
     def process_message(self, message: dict):
         if message["type"] == "bar":

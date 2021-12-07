@@ -79,36 +79,41 @@ def get_historical_data(
 def place_order(
         api: REST,
         symbol: str = SYMBOL,
-        side: str = "buy",
-        type: str = "market",
-        qty: int = QUANTITY,
-        time_in_force: str = "day"
+        **kwargs
 ) -> int:
     """
     Places an order on the API
     Args:
         api: The API to use
         symbol: The symbol to place the order for
-        side: The side of the order
-        type: The type of order
-        qty: The quantity of the order
-        time_in_force: The time in force of the order
 
     Returns:
         The order ID
 
     """
     try:
-        logger.info(f"Placing order {side} {qty} on {SYMBOL}")
+        logger.info(f"Placing {kwargs.get('type')} order {kwargs.get('side')} {kwargs.get('qty')} on {symbol}")
         return api.submit_order(
             symbol=symbol,
-            side=side,
-            type=type,
-            qty=qty,
-            time_in_force=time_in_force,
+            **kwargs
         )
     except Exception as e:
         logger.error(f"Error while placing order: {e}")
+
+
+def replace_order(
+        api: REST,
+        order_id: str,
+        **kwargs
+):
+    try:
+        logger.info(f"Replacing order {order_id} with {kwargs.get('qty')}")
+        return api.replace_order(
+            order_id=order_id,
+            **kwargs
+        )
+    except Exception as e:
+        logger.error(f"Error while replacing order: {e}")
 
 
 def get_position(
@@ -126,6 +131,14 @@ def get_position(
     """
     try:
         return api.get_position(symbol)
+    except Exception as e:
+        logger.debug(e)
+        return None
+
+
+def get_order(api: REST):
+    try:
+        return api.list_orders()[0]
     except Exception as e:
         logger.debug(e)
         return None

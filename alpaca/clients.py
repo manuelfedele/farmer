@@ -32,9 +32,9 @@ class Client:
         self.tz = pytz.timezone('America/New_York')
 
         self.casters = {
-            "bar": Bar,
-            "trade": Trade,
-            "quote": Quote
+            "bars": Bar,
+            "trades": Trade,
+            "quotes": Quote
         }
 
     @property
@@ -46,10 +46,12 @@ class Client:
         return self.end - datetime.timedelta(hours=1)
 
     def _get_data_by_type(self, _type: str, symbol: str, params: dict):
-        return self.session.get(
-            url=f"{self.data_url}/v2/stocks/{symbol}/{_type}",
-            params=params
-        ).json()
+        response = self.session.get(url=f"{self.data_url}/v2/stocks/{symbol}/{_type}", params=params).json()
+        try:
+            return response[_type]
+        except KeyError:
+            # For snapshots, the response is a single object
+            return response
 
     def _get_last_data_by_type(self, _type: str, symbol: str):
         return self.session.get(url=f"{self.data_url}/v2/stocks/{symbol}/{_type}/latest").json()
@@ -58,10 +60,7 @@ class Client:
         return self.session.get(url=f"{self.base_url}/v2/account").json()
 
     def get_order(self, client_order_id: str):
-        return self.session.get(
-            url=f"{self.base_url}/v2/orders",
-            params={"client_order_id": client_order_id}
-        ).json()
+        return self.session.get(url=f"{self.base_url}/v2/orders", params={"client_order_id": client_order_id}).json()
 
     def get_orders(self):
         return self.session.get(url=f"{self.base_url}/v2/orders").json()
@@ -72,9 +71,16 @@ class Client:
         else:
             return self.session.get(url=f"{self.base_url}/v2/positions/{symbol}").json()
 
-    def get_bars(self, symbol: str, timeframe: str = "1Min", start: str = None, end: str = None, limit: int = 1000,
-                 adjustment: str = "raw",
-                 page_token: str = None):
+    def get_bars(
+            self,
+            symbol: str,
+            timeframe: str = "1Min",
+            start: str = None,
+            end: str = None,
+            limit: int = 1000,
+            adjustment: str = "raw",
+            page_token: str = None
+    ) -> list[Bar]:
         tz = pytz.timezone("America/New_York")
         if not end:
             end = datetime.datetime.utcnow().astimezone(tz)
@@ -89,10 +95,18 @@ class Client:
             "adjustment": adjustment,
             "page_token": page_token
         }
-        print(params)
-        return self._get_data_by_type("bars", symbol, params).get("bars", [])
 
-    def get_trades(self, symbol: str, start: str = None, end: str = None, limit: int = 1000, page_token: str = None):
+        data = self._get_data_by_type("bars", symbol, params)
+        return [self.casters["bars"](symbol, **entry) for entry in data]
+
+    def get_trades(
+            self,
+            symbol: str,
+            start: str = None,
+            end: str = None,
+            limit: int = 1000,
+            page_token: str = None
+    ) -> list[Trade]:
         if not end:
             end = self.end
         if not start:
@@ -104,9 +118,17 @@ class Client:
             "limit": limit,
             "page_token": page_token
         }
-        return self._get_data_by_type("trades", symbol, params).get("trades", [])
+        data = self._get_data_by_type("trades", symbol, params)
+        return [self.casters["trades"](symbol, **entry) for entry in data]
 
-    def get_quotes(self, symbol: str, start: str = None, end: str = None, limit: int = 1000, page_token: str = None):
+    def get_quotes(
+            self,
+            symbol: str,
+            start: str = None,
+            end: str = None,
+            limit: int = 1000,
+            page_token: str = None
+    ):
         if not end:
             end = self.end
         if not start:
@@ -118,8 +140,12 @@ class Client:
             "limit": limit,
             "page_token": page_token
         }
-        print(params)
-        return self._get_data_by_type("quotes", symbol, params).get("quotes", [])
+
+        data = self._get_data_by_type("quotes", symbol, params)
+        for quote in data:
+            quote["as_"] = quote["as"]
+            quote.pop("as")
+        return [self.casters["quotes"](symbol, **entry) for entry in data]
 
     def get_last_bar(self, symbol: str):
         response = self._get_last_data_by_type("bars", symbol)
@@ -141,4 +167,4 @@ class Client:
 
 if __name__ == '__main__':
     c = Client(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
-    print(c.get_last_quote("AAPL"))
+    print(c.get_bars("AAPL"))

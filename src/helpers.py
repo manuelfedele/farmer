@@ -41,26 +41,6 @@ def get_historical_data(
         return Bar.to_df(bars)
 
 
-def place_order(api: AlpacaAPI, symbol: str = SYMBOL, **kwargs) -> Union[Order, None]:
-    """
-    Places an order on the API
-    Args:
-        api: The API to use
-        symbol: The symbol to place the order for
-
-    Returns:
-        The order ID
-
-    """
-    try:
-        logger.info(
-            f"Placing {kwargs.get('type')} order {kwargs.get('side')} {kwargs.get('qty')} on {symbol}"
-        )
-        return api.place_order(symbol=symbol, **kwargs)
-    except Exception as e:
-        logger.error(f"Error while placing order: {e}")
-
-
 def get_position(api: AlpacaAPI, symbol: str = SYMBOL) -> Union[Position, None]:
     """
     Retrieves the current position of the symbol

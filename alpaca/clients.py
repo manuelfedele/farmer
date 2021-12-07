@@ -258,6 +258,7 @@ class AlpacaAPI:
         response = self.session.post(
             url=f"{self.base_url}/{version}/orders", json=params
         ).json()
+        print(response)
         return Order(**response)
 
 

@@ -1,6 +1,6 @@
 import os
 
-from alpaca_trade_api import Stream, REST
+from alpaca_trade_api import Stream
 
 from alpaca.clients import AlpacaAPI
 from src.clients import PublisherClient, SubscriberClient

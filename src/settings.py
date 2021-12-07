@@ -6,7 +6,6 @@ from decouple import config
 
 # Generic configuration
 BASE_DIR = config("BASE_DIR", default=Path(__file__).resolve().parent.parent)
-DATABASE_PATH = config("DATABASE_PATH", default=BASE_DIR / "db.sqlite3")
 
 # Alpaca configuration
 APCA_API_KEY_ID = config("APCA_API_KEY_ID")
@@ -21,10 +20,6 @@ DATA_FEED = config(
 # App configuration
 SYMBOL = config("SYMBOL", default="BTCUSD")
 BAR_SIZE = config("BAR_SIZE", default="minute")
-SHORT_MA = config("SHORT_MA", default=15, cast=int)
-LONG_MA = config("LONG_MA", default=150, cast=int)
-QUANTITY = config("QUANTITY", default=1, cast=float)
-SAVE_DATA = config("SAVE_DATA", default=False, cast=bool)
 ALLOWED_CRYPTO_EXCHANGES = config(
     "ALLOWED_CRYPTO_EXCHANGES", default="CBSE", cast=lambda x: x.split(",")
 )

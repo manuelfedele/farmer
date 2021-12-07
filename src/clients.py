@@ -8,7 +8,7 @@ from alpaca_trade_api import Stream
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar, Quote
 from src.helpers import place_order
-from src.settings import BAR_SIZE, CRYPTO_SYMBOLS, q, SYMBOL
+from src.settings import q, BAR_SIZE, CRYPTO_SYMBOLS, SYMBOL
 
 logger = logging.getLogger("farmer")
 

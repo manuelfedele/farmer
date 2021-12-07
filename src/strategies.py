@@ -4,7 +4,7 @@ from typing import Union
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar
 from src.helpers import get_historical_data, get_position, get_target_position
-from src.settings import ALLOWED_CRYPTO_EXCHANGES, SHORT_MA, LONG_MA
+from src.settings import ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
 
@@ -28,25 +28,27 @@ def cross_moving_average_crypto(
     target_position_size = get_target_position(api, float(bar.high))
 
     historical_data_df = get_historical_data(api, df=True, crypto=True)
-    short_sma = round(
-        historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1], 2
-    )
-    long_sma = round(
-        historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1], 2
-    )
+    short_sma = round(historical_data_df.close.rolling(window=15).mean().iloc[-1], 2)
+    long_sma = round(historical_data_df.close.rolling(window=50).mean().iloc[-1], 2)
 
     if not position:
         # We have to buy if condition is met
         if short_sma > long_sma:
             logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}")
-            return {"type": "market", "side": "buy", "qty": target_position_size}
+            order = api.place_order(
+                bar.symbol, side="buy", type="market", qty=target_position_size
+            )
+            logger.info(f"Placed order: {order}")
         else:
             logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}. Doing Nothing")
     else:
         # We have to sell if condition is met
         if short_sma <= long_sma:
             logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}")
-            return {"type": "market", "side": "sell", "qty": position.qty}
+            order = api.place_order(
+                bar.symbol, qty=position.qty, side="sell", type="market"
+            )
+            logger.info(f"Placed order: {order}")
         else:
             logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}")
             logger.info(f"Actual Position: {position}")

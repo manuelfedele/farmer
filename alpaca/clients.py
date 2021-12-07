@@ -3,11 +3,13 @@ import datetime
 import pytz
 import requests
 
-from alpaca.entities import Account, Bar, Trade, Quote, Order, Position
+from alpaca.entities import Account, Bar, Trade, EntityFactory
 from src.settings import APCA_API_KEY_ID, APCA_API_SECRET_KEY, APCA_API_BASE_URL
 
 
 class AlpacaAPI:
+    EntityFactory = EntityFactory
+
     def __init__(
         self,
         base_url: str = APCA_API_BASE_URL,
@@ -29,14 +31,6 @@ class AlpacaAPI:
         self.account = Account(**self.get_account())
 
         self.tz = pytz.timezone("America/New_York")
-
-        self.casters = {
-            "bars": Bar,
-            "trades": Trade,
-            "quotes": Quote,
-            "orders": Order,
-            "positions": Position,
-        }
 
         self.crypto_symbols = ("BTCUSD", "BCHUSD", "ETHUSD", "LTCUSD")
 
@@ -76,29 +70,32 @@ class AlpacaAPI:
         return self.session.get(url=f"{self.base_url}/{version}/account").json()
 
     def get_order(self, order_id: str, version: str = "v2"):
-        response = self.session.get(
+        orders = self.session.get(
             url=f"{self.base_url}/{version}/orders/{order_id}"
         ).json()
-        return self.casters["orders"](**response)
+        return self.EntityFactory(orders).create_entity("orders")
 
     def get_orders(self, version: str = "v2"):
         orders = self.session.get(url=f"{self.base_url}/{version}/orders").json()
-        return [self.casters["orders"](**o) for o in orders]
+        return [self.EntityFactory(order).create_entity("orders") for order in orders]
 
     def get_positions(self, symbol: str = None, version: str = "v2"):
         if not symbol:
-            response = self.session.get(
+            positions = self.session.get(
                 url=f"{self.base_url}/{version}/positions"
             ).json()
         else:
-            response = self.session.get(
+            positions = self.session.get(
                 url=f"{self.base_url}/{version}/positions/{symbol}"
             ).json()
 
-        if isinstance(response, list):
-            return [self.casters["positions"](**p) for p in response]
+        if isinstance(positions, list):
+            return [
+                self.EntityFactory(position).create_entity("positions")
+                for position in positions
+            ]
         else:
-            return self.casters["positions"](**response)
+            return self.EntityFactory(positions).create_entity("positions")
 
     def get_bars(
         self,
@@ -127,14 +124,16 @@ class AlpacaAPI:
 
         if not crypto:
             params["adjustment"] = adjustment
-            response = self._get_data_by_type("bars", symbol, params)
+            bars = self._get_data_by_type("bars", symbol, params)
         else:
             params["exchanges"] = exchanges
-            response = self._get_data_by_type(
+            bars = self._get_data_by_type(
                 "bars", symbol, params, version="v1beta1", kind="crypto"
             )
 
-        return [self.casters["bars"](symbol, **entry) for entry in response]
+        for bar in bars:
+            bar["symbol"] = symbol
+        return [self.EntityFactory(bar).create_entity("bars") for bar in bars]
 
     def get_trades(
         self,
@@ -155,8 +154,11 @@ class AlpacaAPI:
             "limit": limit,
             "page_token": page_token,
         }
-        data = self._get_data_by_type("trades", symbol, params)
-        return [self.casters["trades"](symbol, **entry) for entry in data]
+        trades = self._get_data_by_type("trades", symbol, params)
+        for trade in trades:
+            trade["symbol"] = symbol
+
+        return [self.EntityFactory(trade).create_entity("trades") for trade in trades]
 
     def get_quotes(
         self,
@@ -178,25 +180,30 @@ class AlpacaAPI:
             "page_token": page_token,
         }
 
-        data = self._get_data_by_type("quotes", symbol, params)
-        for quote in data:
+        quotes = self._get_data_by_type("quotes", symbol, params)
+        for quote in quotes:
             quote["as_"] = quote["as"]
             quote.pop("as")
-        return [self.casters["quotes"](symbol, **entry) for entry in data]
+            quote["symbol"] = symbol
+
+        return [self.EntityFactory(quote).create_entity("quotes") for quote in quotes]
 
     def get_last_bar(self, symbol: str):
-        response = self._get_last_data_by_type("bars", symbol)
-        return self.casters["bar"](symbol=response["symbol"], **response["bar"])
+        bar = self._get_last_data_by_type("bars", symbol)["bar"]
+        bar["symbol"] = symbol
+        return self.EntityFactory(bar).create_entity("bars")
 
     def get_last_trade(self, symbol: str):
-        response = self._get_last_data_by_type("trades", symbol)
-        return self.casters["trade"](symbol=response["symbol"], **response["trade"])
+        trade = self._get_last_data_by_type("trades", symbol)["trade"]
+        trade["symbol"] = symbol
+        return self.EntityFactory(trade).create_entity("trades")
 
     def get_last_quote(self, symbol: str):
-        response = self._get_last_data_by_type("quotes", symbol)
-        response["quote"]["as_"] = response["quote"]["as"]
-        response["quote"].pop("as")
-        return self.casters["quote"](symbol=response["symbol"], **response["quote"])
+        quote = self._get_last_data_by_type("quotes", symbol)["quote"]
+        quote["as_"] = quote["as"]
+        quote.pop("as")
+        quote["symbol"] = symbol
+        return self.EntityFactory(quote).create_entity("quotes")
 
     def get_snapshot(self, symbol: str):
         return self._get_data_by_type("snapshot", symbol, {})
@@ -255,11 +262,11 @@ class AlpacaAPI:
         if trail_percent is not None:
             params["trail_percent"] = trail_percent
 
-        response = self.session.post(
+        order = self.session.post(
             url=f"{self.base_url}/{version}/orders", json=params
         ).json()
-        print(response)
-        return Order(**response)
+
+        return self.EntityFactory(order).create_entity("orders")
 
 
 if __name__ == "__main__":

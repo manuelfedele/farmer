@@ -20,6 +20,8 @@ DATA_FEED = config(
 # App configuration
 SYMBOL = config("SYMBOL", default="BTCUSD")
 BAR_SIZE = config("BAR_SIZE", default="minute")
+
+CRYPTO = config("CRYPTO", default=False, cast=bool)
 ALLOWED_CRYPTO_EXCHANGES = config(
     "ALLOWED_CRYPTO_EXCHANGES", default="CBSE", cast=lambda x: x.split(",")
 )

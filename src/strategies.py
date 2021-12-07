@@ -4,30 +4,33 @@ from typing import Union
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar
 from src.helpers import get_historical_data, get_position, get_target_position
-from src.settings import ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
 
 
-def cross_moving_average_crypto(
-    api: AlpacaAPI, bar: Bar, allowed_crypto_exchanges: list = ALLOWED_CRYPTO_EXCHANGES
+def cross_moving_average(
+    api: AlpacaAPI,
+    bar: Bar,
+    crypto: bool = False,
+    allowed_crypto_exchanges: list = None,
 ) -> Union[dict, None]:
     """
     Moving average strategy.
     Args:
         api: The api object.
         bar: The bar quote received.
+        crypto: If the asset is crypto.
         allowed_crypto_exchanges: The list of allowed crypto exchanges.
     Returns:
 
     """
-    if bar.exchange not in allowed_crypto_exchanges:
+    if crypto and bar.exchange not in allowed_crypto_exchanges:
         return
 
     position = get_position(api)
     target_position_size = get_target_position(api, float(bar.high))
 
-    historical_data_df = get_historical_data(api, df=True, crypto=True)
+    historical_data_df = get_historical_data(api, df=True, crypto=crypto)
     short_sma = round(historical_data_df.close.rolling(window=15).mean().iloc[-1], 2)
     long_sma = round(historical_data_df.close.rolling(window=50).mean().iloc[-1], 2)
 

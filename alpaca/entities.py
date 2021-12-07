@@ -9,32 +9,8 @@ import pandas as pd
 
 
 class BaseEntity:
-    def __init__(self):
-        self.cast_attributes()
-
     def __str__(self):
         return json.dumps(self.__dict__, indent=4, sort_keys=True, default=str)
-
-    def __repr__(self):
-        return self.__str__()
-
-    @property
-    def datetime_formats(self):
-        return "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z"
-
-    def cast_attributes(self):
-        for key, value in self.__dict__.items():
-            if isinstance(value, str) and ("time" in key or "at" in key):
-                for _format in self.datetime_formats:
-                    try:
-                        self.__dict__[key] = datetime.datetime.strptime(value, _format)
-                        break
-                    except ValueError:
-                        pass
-            if isinstance(value, pd.Timestamp):
-                self.__dict__[key] = value.to_pydatetime()
-            if isinstance(value, msgpack.ext.Timestamp):
-                self.__dict__[key] = value.to_datetime()
 
     def to_dict(self):
         return self.__dict__
@@ -259,3 +235,40 @@ class Quote(BaseEntity):
         self.exchange = x
 
         super().__init__()
+
+
+class EntityFactory:
+    def __init__(self, entity: dict):
+        self.data = self.cast_attributes(entity)
+        self.casters = {
+            "bars": Bar,
+            "trades": Trade,
+            "quotes": Quote,
+            "orders": Order,
+            "positions": Position,
+        }
+
+    @property
+    def datetime_formats(self):
+        return "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z"
+
+    def create_entity(self, type: str):
+        if type in self.casters:
+            return self.casters[type](**self.data)
+        else:
+            raise ValueError(f"Entity type {type} not supported")
+
+    def cast_attributes(self, data):
+        for key, value in data.items():
+            if isinstance(value, str) and ("time" in key or "at" in key):
+                for _format in self.datetime_formats:
+                    try:
+                        data[key] = datetime.datetime.strptime(value, _format)
+                        break
+                    except ValueError:
+                        pass
+            if isinstance(value, pd.Timestamp):
+                data[key] = value.to_pydatetime()
+            if isinstance(value, msgpack.ext.Timestamp):
+                data[key] = value.to_datetime()
+        return data

@@ -8,9 +8,9 @@ from src.settings import (
     APCA_API_KEY_ID,
     APCA_API_SECRET_KEY,
     APCA_API_BASE_URL,
-    DATA_FEED,
+    DATA_FEED, CRYPTO,
 )
-from src.strategies import cross_moving_average_crypto
+from src.strategies import cross_moving_average
 
 os.environ.setdefault("APCA_API_KEY_ID", APCA_API_KEY_ID)
 os.environ.setdefault("APCA_API_SECRET_KEY", APCA_API_SECRET_KEY)
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     api = AlpacaAPI()
 
     publisher = PublisherClient(stream=stream)
-    subscriber = SubscriberClient(api=api, strategy=cross_moving_average_crypto)
+    subscriber = SubscriberClient(api=api, strategy=cross_moving_average, crypto=CRYPTO)
 
     subscriber.start()
     publisher.start()

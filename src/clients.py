@@ -7,7 +7,7 @@ from alpaca_trade_api import Stream
 
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar, Quote
-from src.settings import q, BAR_SIZE, CRYPTO_SYMBOLS, SYMBOL
+from src.settings import q, BAR_SIZE, CRYPTO_SYMBOLS, SYMBOL, ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
 
@@ -132,11 +132,14 @@ class SubscriberClient:
         api: AlpacaAPI,
         strategy: Callable,
         symbol: str = SYMBOL,
+        crypto: bool = False,
         queue: Queue = q,
     ):
         self.api = api
         self.strategy = strategy
+
         self.symbol = symbol
+        self.crypto = crypto
 
         self.queue = queue
 
@@ -145,7 +148,7 @@ class SubscriberClient:
         threading.Thread(name="Dispatcher", target=self.listen, daemon=True).start()
 
     def apply_strategy(self, message):
-        self.strategy(api=self.api, bar=message)
+        self.strategy(api=self.api, bar=message, crypto=self.crypto, allowed_crypto_exchanges=ALLOWED_CRYPTO_EXCHANGES)
 
     def process_entity(self, entity: Union[Bar, Quote]):
         if isinstance(entity, Bar):

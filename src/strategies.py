@@ -35,8 +35,6 @@ def cross_moving_average_crypto(
     short_sma = round(historical_data_df.close.rolling(window=SHORT_MA).mean().iloc[-1], 2)
     long_sma = round(historical_data_df.close.rolling(window=LONG_MA).mean().iloc[-1], 2)
 
-    logger.info(f"\n{historical_data_df.tail().to_string()}")
-
     if not position:
         # We have to buy if condition is met
         if short_sma > long_sma:
@@ -50,4 +48,6 @@ def cross_moving_average_crypto(
             logger.info(f"Short sma:{short_sma} < Long sma:{long_sma}")
             return {"type": "trailing_stop", "side": "sell", "qty": position.qty}
         else:
-            logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}. Doing Nothing")
+            logger.info(f"Short sma:{short_sma} > Long sma:{long_sma}")
+            logger.info(f"Actual Position: {position}")
+

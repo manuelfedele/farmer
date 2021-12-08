@@ -1,4 +1,5 @@
 import datetime
+import json
 
 import pytz
 import requests
@@ -271,4 +272,7 @@ class AlpacaAPI:
 
 if __name__ == "__main__":
     api = AlpacaAPI(key_id=APCA_API_KEY_ID, secret_key=APCA_API_SECRET_KEY)
-    print(api.get_bars("BTCUSD", "1Min", exchanges=None, crypto=True))
+    bars = api.get_bars("BTCUSD", "1Min", exchanges=None, crypto=True)
+    bars = [bar.to_dict() for bar in bars]
+    json.dump(bars, open("../data/bars.json", "w"))
+

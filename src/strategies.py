@@ -28,6 +28,8 @@ class CrossMovingAverage(Strategy):
         self.allowed_crypto_exchanges = allowed_crypto_exchanges
         self.inhibit_trading = False
 
+        self.stop_loss = -8
+
     @property
     def historical_data(self):
         df = get_historical_data(
@@ -48,11 +50,21 @@ class CrossMovingAverage(Strategy):
     def target_position(self, actual_price: float):
         return get_target_position(self.api, actual_price)
 
+    def place_order(self, symbol: str, side: str, qty: int, type: str):
+        if not self.inhibit_trading:
+            logger.info(f"Placing order: {symbol=}, {side=}, {qty=}, {type=}")
+            order = self.api.place_order(symbol=symbol, side=side, type=type, qty=qty)
+            logger.info(f"Placed order: {order}")
+            return order
+        else:
+            logger.info("Inhibit trading is enabled")
+
     def apply(self, bar: Bar):
         if self.crypto and bar.exchange not in self.allowed_crypto_exchanges:
             return
 
         position = self.position
+
         historical_df = self.historical_data
 
         short_sma = round(historical_df.short_ma.iloc[-1], 2)
@@ -65,19 +77,30 @@ class CrossMovingAverage(Strategy):
         if not position:
             # We have to buy if condition is met
             if short_sma > long_sma:
-                order = self.api.place_order(
-                    bar.symbol,
+                self.place_order(
+                    symbol=self.symbol,
                     side="buy",
-                    type="market",
                     qty=self.target_position(bar.high),
+                    type="market",
                 )
-                logger.info(f"Placed order: {order}")
+            else:
+                self.inhibit_trading = False
         else:
             # We have to sell if condition is met
+            profit_loss = round(position.unrealized_pl, 2)
+
             if short_sma <= long_sma:
-                order = self.api.place_order(
-                    bar.symbol, qty=position.qty, side="sell", type="market"
+                # We crossed the MA, so we have to sell asap
+                self.place_order(
+                    symbol=bar.symbol, qty=position.qty, side="sell", type="market"
                 )
-                logger.info(f"Placed order: {order}")
             else:
-                logger.info(f"Actual Position: {position.unrealized_pl}$")
+                if self.stop_loss < profit_loss < self.stop_loss * -1 * 1.5:
+                    self.place_order(
+                        symbol=bar.symbol, qty=position.qty, side="sell", type="market"
+                    )
+                    self.inhibit_trading = True
+                    self.inhibit_trading = True
+                else:
+                    logger.info(f"Actual Position: {position.unrealized_pl}$")
+

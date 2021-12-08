@@ -1,12 +1,13 @@
 import logging
 import threading
 from queue import Queue
-from typing import Callable, Union
+from typing import Union
 
 from alpaca_trade_api import Stream
 
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar, Quote
+from src.base import Strategy
 from src.settings import q, BAR_SIZE, CRYPTO_SYMBOLS, SYMBOL, ALLOWED_CRYPTO_EXCHANGES
 
 logger = logging.getLogger("farmer")
@@ -42,6 +43,9 @@ class PublisherClient:
         """
         logger.info(f"Starting {self.__class__.__name__}")
         if self.symbol in self.crypto_symbols:
+            logger.info(
+                f"Subscribing data for {self.symbol} ({ALLOWED_CRYPTO_EXCHANGES})"
+            )
             self.stream.subscribe_crypto_trades(self.trade_callback, self.symbol)
             self.stream.subscribe_crypto_bars(
                 self.bar_callback,
@@ -130,7 +134,7 @@ class SubscriberClient:
     def __init__(
         self,
         api: AlpacaAPI,
-        strategy: Callable,
+        strategy: Strategy,
         symbol: str = SYMBOL,
         crypto: bool = False,
         queue: Queue = q,
@@ -147,12 +151,9 @@ class SubscriberClient:
         logger.info(f"Starting {self.__class__.__name__}")
         threading.Thread(name="Dispatcher", target=self.listen, daemon=True).start()
 
-    def apply_strategy(self, message):
-        self.strategy(api=self.api, bar=message, crypto=self.crypto, allowed_crypto_exchanges=ALLOWED_CRYPTO_EXCHANGES)
-
     def process_entity(self, entity: Union[Bar, Quote]):
         if isinstance(entity, Bar):
-            self.apply_strategy(entity)
+            self.strategy.apply(entity)
         else:
             logger.debug(f"Message type {type(entity)} not supported.")
 

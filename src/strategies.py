@@ -95,11 +95,10 @@ class CrossMovingAverage(Strategy):
                     symbol=bar.symbol, qty=position.qty, side="sell", type="market"
                 )
             else:
-                if self.stop_loss < profit_loss < self.stop_loss * -1 * 1.5:
+                if profit_loss <= self.stop_loss or profit_loss >= self.stop_loss * -1 * 1.5:
                     self.place_order(
                         symbol=bar.symbol, qty=position.qty, side="sell", type="market"
                     )
-                    self.inhibit_trading = True
                     self.inhibit_trading = True
                 else:
                     logger.info(f"Actual Position: {position.unrealized_pl}$")

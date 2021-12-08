@@ -8,8 +8,15 @@ data = json.load(open("data/bars.json"))
 
 
 @app.get("/")
-def bars():
-    return data
+def bars(exchange: str = None):
+    if exchange is None:
+        return data
+    else:
+        new_data = []
+        for element in data:
+            if element['exchange'] == exchange:
+                new_data.append(element)
+        return new_data
 
 
 if __name__ == "__main__":

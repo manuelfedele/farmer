@@ -1,8 +1,7 @@
-import datetime
 import json
 
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 
 app = FastAPI()
 data = json.load(open("data/bars.json"))

@@ -8,9 +8,16 @@ from alpaca_trade_api import Stream
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar, Quote
 from src.base import Strategy
-from src.settings import q, BAR_SIZE, CRYPTO_SYMBOLS, SYMBOL, ALLOWED_CRYPTO_EXCHANGES
+from src.settings import (
+    q,
+    BAR_SIZE,
+    CRYPTO_SYMBOLS,
+    SYMBOL,
+    ALLOWED_CRYPTO_EXCHANGES,
+    APP_NAME,
+)
 
-logger = logging.getLogger("farmer")
+logger = logging.getLogger(APP_NAME)
 
 
 class PublisherClient:

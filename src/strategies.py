@@ -4,8 +4,9 @@ from alpaca.clients import AlpacaAPI
 from alpaca.entities import Bar
 from src.base import Strategy
 from src.helpers import get_historical_data, get_position, get_target_position
+from src.settings import APP_NAME
 
-logger = logging.getLogger("farmer")
+logger = logging.getLogger(APP_NAME)
 
 
 class CrossMovingAverage(Strategy):

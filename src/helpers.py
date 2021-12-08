@@ -5,9 +5,9 @@ import pandas as pd
 
 from alpaca.clients import AlpacaAPI
 from alpaca.entities import Order, Bar, Position
-from src.settings import SYMBOL
+from src.settings import SYMBOL, APP_NAME
 
-logger = logging.getLogger("farmer")
+logger = logging.getLogger(APP_NAME)
 
 
 def get_historical_data(

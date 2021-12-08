@@ -5,6 +5,7 @@ from pathlib import Path
 from decouple import config
 
 # Generic configuration
+APP_NAME = config("APP_NAME", default="Farmer")
 BASE_DIR = config("BASE_DIR", default=Path(__file__).resolve().parent.parent)
 
 # Alpaca configuration
@@ -32,7 +33,7 @@ CRYPTO_SYMBOLS = config(
 )
 
 # Logging configuration
-logger = logging.getLogger("farmer")
+logger = logging.getLogger(APP_NAME)
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
     "{asctime} - {threadName} - {thread:^6d} - {name} - [{filename:>15s}:{lineno:>5d}] - {levelname:^8s} - {message}",

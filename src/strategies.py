@@ -87,7 +87,7 @@ class CrossMovingAverage(Strategy):
                 self.inhibit_trading = False
         else:
             # We have to sell if condition is met
-            profit_loss = round(position.unrealized_pl, 2)
+            profit_loss = round(float(position.unrealized_pl), 2)
 
             if short_sma <= long_sma:
                 # We crossed the MA, so we have to sell asap

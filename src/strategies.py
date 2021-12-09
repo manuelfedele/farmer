@@ -29,6 +29,7 @@ class CrossMovingAverage(Strategy):
         self.inhibit_trading = False
 
         self.stop_loss = -8
+        self.take_profit = 8
 
     @property
     def historical_data(self):
@@ -95,7 +96,7 @@ class CrossMovingAverage(Strategy):
                     symbol=bar.symbol, qty=position.qty, side="sell", type="market"
                 )
             else:
-                if profit_loss <= self.stop_loss or profit_loss >= self.stop_loss * -1 * 1.5:
+                if profit_loss <= self.stop_loss or profit_loss >= self.take_profit:
                     self.place_order(
                         symbol=bar.symbol, qty=position.qty, side="sell", type="market"
                     )

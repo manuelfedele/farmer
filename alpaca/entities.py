@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import datetime
 import json
+import logging
 from dataclasses import dataclass
 
 import msgpack
 import pandas as pd
+
+from src.settings import APP_NAME
+
+logger = logging.getLogger(APP_NAME)
 
 
 class BaseEntity:
@@ -254,7 +259,11 @@ class EntityFactory:
 
     def create_entity(self, type: str):
         if type in self.casters:
-            return self.casters[type](**self.data)
+            try:
+                return self.casters[type](**self.data)
+            except TypeError:
+                logger.warning(self.data)
+                return None
         else:
             raise ValueError(f"Entity type {type} not supported")
 
